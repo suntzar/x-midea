@@ -2,7 +2,6 @@
 <html lang="pt-br" data-theme="sakura-dark">
   <!-- Tema padrão definido para Sakura Dark -->
 
-  
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -159,6 +158,18 @@
       .suggestion-item:hover {
         background-color: var(--noxss-bg-elements);
       }
+
+      /* Estilo Masonry para o Feed */
+      .feed-masonry {
+        column-count: 5; /* 5 colunas em telas grandes */
+        column-gap: 1rem;
+      }
+      .feed-masonry .noxss-card {
+        display: inline-block; /* Essencial para o layout de colunas */
+        width: 100%;
+        margin-bottom: 1rem;
+        break-inside: avoid; /* Previne que um card seja quebrado entre colunas */
+      }
     </style>
   </head>
 
@@ -195,7 +206,7 @@
                     <option value="video">Vídeos</option>
                   </select>
                 </div>
-                <div class="noxss-card-deck" id="feed-container"></div>
+                <div class="feed-masonry" id="feed-container"></div>
                 <div id="loading" class="text-center my-4" style="display: none">
                   <div class="noxss-spinner">
                     <div></div>
