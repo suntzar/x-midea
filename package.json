@@ -1,0 +1,14 @@
+{
+  "name": "twitter-media-server",
+  "version": "1.0.0",
+  "description": "Servidor Node.js para servir mídias de bookmarks do Twitter via web",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Seu Nome",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
