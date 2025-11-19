@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="pt-br" data-theme="sakura-dark">
+    <!-- Tema padrão definido para Sakura Dark -->
+
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Rule34 App - Powered by Noxss</title>
+
+        <!-- Favicon SVG incorporado via Base64 -->
+        <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNy4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjUgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZmlsbD0iI2RiNjM5ZiIgZD0iTTE1OS4zIDUuNGM3LjgtNy4zIDE5LjktNy4yIDI3LjcgLjFjMjcuNiAyNS45IDUzLjUgNTMuOCA3Ny43IDg0YzExLTE0LjQgMjMuNS0zMC4xIDM3LTQyLjljNy45LTcuNCAyMC4xLTcuNCAyOCAuMWMzNC42IDMzIDYzLjkgNzYuNiA4NC41IDExOGMyMC4zIDQwLjggMzMuOCA4Mi41IDMzLjggMTExLjlDNDQ4IDQwNC4yIDM0OC4yIDUxMiAyMjQgNTEyQzk4LjQgNTEyIDAgNDA0LjEgMCAyNzYuNWMwLTM4LjQgMTcuOC04NS4zIDQ1LjQtMTMxLjdDNzMuMyA5Ny43IDExMi43IDQ4LjYgMTU5LjMgNS40ek0yMjUuNyA0MTZjMjUuMyAwIDQ3LjctNyA2OC44LTIxYzQyLjEtMjkuNCA1My40LTg4LjIgMjguMS0xMzQuNGMtNC41LTktMTYtOS42LTIyLjUtMmwtMjUuMiAyOS4zYy02LjYgNy42LTE4LjUgNy40LTI0LjctLjVjLTE2LjUtMjEtNDYtNTguNS02Mi44LTc5LjhjLTYuMy04LTE4LjMtOC4xLTI0LjctLjFjLTMzLjggNDIuNS01MC44IDY5LjMtNTAuOCA5OS40QzExMiAzNzUuNCAxNjIuNiA0MTYgMjI1LjcgNDE2eiIvPjwvc3ZnPg==" type="image/svg+xml" />
+
+        <!-- DEPENDÊNCIAS DE TERCEIROS (Ícones) -->
+        <script defer src="https://unpkg.com/feather-icons"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+        <!-- BIBLIOTECA NOXSS (ÚNICA DEPENDÊNCIA DE ESTILO) -->
+        <link rel="stylesheet" href="noxss/dist/noxss.css" />
+
+        <style>
+            /* TEMAS PERSONALIZADOS DO APP */
+            [data-theme="sakura"] {
+                --noxss-bg-main: #fdf8f9;
+                --noxss-bg-surface: #ffffff;
+                --noxss-bg-elements: #f7f1f3;
+                --noxss-border-color: #e5dce0;
+                --noxss-text-primary: #4c3f43;
+                --noxss-text-secondary: #8b7a80;
+                --noxss-accent-primary: #f4a2b8;
+                --noxss-accent-primary-hover: #f8b8c8;
+                --noxss-accent-primary-rgb: 244, 162, 184;
+                --noxss-text-on-accent: #2e1e23;
+                --noxss-color-danger: #d93858;
+                --noxss-color-danger-rgb: 217, 56, 88;
+            }
+
+            [data-theme="sakura-dark"] {
+                --noxss-bg-main: #1a1617;
+                --noxss-bg-surface: #241e20;
+                --noxss-bg-elements: #2d2628;
+                --noxss-border-color: #3a3234;
+                --noxss-text-primary: #f0e8eb;
+                --noxss-text-secondary: #a19498;
+                --noxss-accent-primary: #f4a2b8;
+                --noxss-accent-primary-hover: #f8b8c8;
+                --noxss-accent-primary-rgb: 244, 162, 184;
+                --noxss-text-on-accent: #2e1e23;
+                --noxss-color-danger: #ff5c7a;
+                --noxss-color-danger-rgb: 255, 92, 122;
+            }
+
+            /* UTILITY CLASSES */
+            .noxss-desktop-nav {
+                display: none;
+            }
+
+            .noxss-mobile-nav {
+                display: flex;
+            }
+
+            @media (min-width: 768px) {
+                .noxss-desktop-nav {
+                    display: flex;
+                }
+
+                .noxss-mobile-nav {
+                    display: none;
+                }
+            }
+
+            .noxss-panel-container {
+                padding: 1rem;
+            }
+
+            .noxss-input-group {
+                position: relative;
+                display: flex;
+                align-items: stretch;
+            }
+
+            .noxss-input-group .noxss-input {
+                flex-grow: 1;
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+
+            .noxss-input-group .noxss-btn {
+                border-top-left-radius: 0;
+                border-bottom-left-radius: 0;
+            }
+
+            .text-center {
+                text-align: center;
+            }
+
+            .text-secondary {
+                color: var(--noxss-text-secondary);
+            }
+
+            .my-4 {
+                margin-top: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .mt-3 {
+                margin-top: 1rem;
+            }
+
+            .mb-3 {
+                margin-bottom: 1rem;
+            }
+
+            /* Estilos específicos do App */
+            .tag-list {
+                font-size: 0.85rem;
+                color: var(--noxss-text-secondary);
+                margin-bottom: 1rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .autocomplete-suggestions {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                z-index: 10;
+                background-color: var(--noxss-bg-surface);
+                border: 1px solid var(--noxss-border-color);
+                border-top: none;
+                border-radius: 0 0 var(--noxss-border-radius-base) var(--noxss-border-radius-base);
+                max-height: 250px;
+                overflow-y: auto;
+            }
+
+            .suggestion-item {
+                padding: 0.75rem 1rem;
+                cursor: pointer;
+                transition: background-color 150ms ease;
+            }
+
+            .suggestion-item:hover {
+                background-color: var(--noxss-bg-elements);
+            }
+        </style>
+    </head>
+
+    <body data-noxss-layout="app">
+        <div class="noxss-layout">
+            <!-- Navbar -->
+            <nav class="noxss-navbar">
+                <a class="noxss-navbar__brand" href="#">
+                    <i class="noxss-icon fa-solid fa-fire" style="color: var(--noxss-accent-primary)"></i>
+                    <span>R34</span>
+                </a>
+            </nav>
+
+            <!-- Conteúdo Principal -->
+            <main class="noxss-layout__content">
+                <div class="noxss-tabs" data-default-tab="feed">
+                    <div class="noxss-tabs__header noxss-desktop-nav">
+                        <button class="noxss-tabs__header-button" data-tab-id="feed"><i data-feather="list" class="noxss-icon"></i> Feed</button>
+                        <button class="noxss-tabs__header-button" data-tab-id="search"><i data-feather="search" class="noxss-icon"></i> Buscar</button>
+                        <button class="noxss-tabs__header-button" data-tab-id="favorites"><i data-feather="heart" class="noxss-icon"></i> Favoritos</button>
+                        <button class="noxss-tabs__header-button" data-tab-id="history"><i data-feather="clock" class="noxss-icon"></i> Histórico</button>
+                        <button class="noxss-tabs__header-button" data-tab-id="settings"><i data-feather="settings" class="noxss-icon"></i> Ajustes</button>
+                    </div>
+
+                    <div class="noxss-tabs__content-area">
+                        <!-- Painel: Feed -->
+                        <div class="noxss-tabs__panel" id="panel-feed">
+                            <div class="noxss-panel-container">
+                                <div class="noxss-form-group">
+                                    <select id="filter-type" class="noxss-select">
+                                        <option value="hara_id_21">hara id 21</option>
+                                        <option value="index">Todos</option>
+                                        <option value="image">Imagens</option>
+                                        <option value="video">Vídeos</option>
+                                    </select>
+                                </div>
+                                <div class="noxss-card-deck" id="feed-container"></div>
+                                <div id="loading" class="text-center my-4" style="display: none">
+                                    <div class="noxss-spinner">
+                                        <div></div>
+                                        <div></div>
+                                        <div></div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3"><button id="load-more" class="noxss-btn noxss-btn--secondary">Carregar mais</button></div>
+                            </div>
+                        </div>
+
+                        <!-- Painel: Busca -->
+                        <div class="noxss-tabs__panel" id="panel-search">
+                            <div class="noxss-panel-container">
+                                <form id="search-form" class="mb-3">
+                                    <div class="noxss-input-group">
+                                        <input type="search" class="noxss-input" placeholder="Digite as tags (ex: tag1 tag2)" id="search-input" autocomplete="off" />
+                                        <button class="noxss-btn noxss-btn--primary" type="submit"><i data-feather="search" class="noxss-icon"></i></button>
+                                        <div id="autocomplete-container" class="autocomplete-suggestions" style="display: none"></div>
+                                    </div>
+                                </form>
+                                <div class="noxss-card-deck" id="search-results"></div>
+                                <div id="loading-search" class="text-center my-4" style="display: none">
+                                    <div class="noxss-spinner">
+                                        <div></div>
+                                        <div></div>
+                                        <div></div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3"><button id="load-more-search" class="noxss-btn noxss-btn--secondary" style="display: none">Carregar mais</button></div>
+                            </div>
+                        </div>
+
+                        <!-- Painel: Favoritos -->
+                        <div class="noxss-tabs__panel" id="panel-favorites">
+                            <div class="noxss-panel-container">
+                                <div class="noxss-form-group">
+                                    <label for="sort-favorites" class="noxss-label">Ordenar por:</label>
+                                    <select id="sort-favorites" class="noxss-select">
+                                        <option value="date">Data de Adição</option>
+                                        <option value="tags">Tags (A-Z)</option>
+                                    </select>
+                                </div>
+                                <div class="noxss-card-deck" id="favorites-container"></div>
+                            </div>
+                        </div>
+
+                        <!-- Painel: Histórico -->
+                        <div class="noxss-tabs__panel" id="panel-history">
+                            <div class="noxss-panel-container">
+                                <div id="history-list"></div>
+                            </div>
+                        </div>
+
+                        <!-- Painel: Ajustes -->
+                        <div class="noxss-tabs__panel" id="panel-settings">
+                            <div class="noxss-panel-container">
+                                <div class="noxss-form-group">
+                                    <label for="theme-select" class="noxss-label">Tema Visual</label>
+                                    <select id="theme-select" class="noxss-select">
+                                        <option value="sakura-dark">Sakura Dark (Rosa)</option>
+                                        <option value="sakura">Sakura Light (Rosa)</option>
+                                        <option value="dark">Noxss Dark</option>
+                                        <option value="light">Noxss Light</option>
+                                    </select>
+                                </div>
+                                <hr class="my-4" />
+                                <h5>Gerenciamento de Dados</h5>
+                                <p class="text-secondary">Limpe seus dados ou faça um backup local.</p>
+                                <div class="noxss-list noxss-list--inset">
+                                    <div class="noxss-list-item">
+                                        <div class="noxss-list-item__content">
+                                            <div class="noxss-list-item__title">Limpar Histórico</div>
+                                        </div>
+                                        <div class="noxss-list-item__trailing">
+                                            <button id="clear-history" class="noxss-btn noxss-btn--danger noxss-btn--icon" aria-label="Limpar Histórico"><i data-feather="trash-2" class="noxss-icon"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="noxss-list-item">
+                                        <div class="noxss-list-item__content">
+                                            <div class="noxss-list-item__title">Limpar Favoritos</div>
+                                        </div>
+                                        <div class="noxss-list-item__trailing">
+                                            <button id="clear-favorites" class="noxss-btn noxss-btn--danger noxss-btn--icon" aria-label="Limpar Favoritos"><i data-feather="trash-2" class="noxss-icon"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem">
+                                    <button id="download-json-btn" class="noxss-btn noxss-btn--secondary"><i data-feather="download" class="noxss-icon"></i> Baixar Backup</button>
+                                    <button id="copy-json-btn" class="noxss-btn noxss-btn--secondary"><i data-feather="copy" class="noxss-icon"></i> Copiar Backup</button>
+                                    <button id="import-backup-btn" class="noxss-btn noxss-btn--secondary"><i data-feather="upload" class="noxss-icon"></i> Importar Backup</button>
+                                    <input type="file" id="upload-json-input" accept=".json" style="display: none" />
+                                </div>
+                                <hr class="my-4" />
+                                <h5>Tags Indesejadas</h5>
+                                <div class="noxss-input-group mb-3">
+                                    <input type="text" class="noxss-input" placeholder="Adicionar tag para filtrar" id="unwanted-tag-input" />
+                                    <button class="noxss-btn noxss-btn--primary" type="button" id="add-unwanted-tag-btn">Adicionar</button>
+                                </div>
+                                <ul id="unwanted-tags-list" class="noxss-list noxss-list--inset"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Barra de Navegação Inferior (Mobile) -->
+            <nav class="noxss-navbar noxss-navbar--bottom noxss-mobile-nav">
+                <button class="noxss-tabs__nav-button" data-tab-id="feed" aria-label="Feed"><i data-feather="list" class="noxss-icon"></i></button>
+                <button class="noxss-tabs__nav-button" data-tab-id="search" aria-label="Buscar"><i data-feather="search" class="noxss-icon"></i></button>
+                <button class="noxss-tabs__nav-button" data-tab-id="favorites" aria-label="Favoritos"><i data-feather="heart" class="noxss-icon"></i></button>
+                <button class="noxss-tabs__nav-button" data-tab-id="history" aria-label="Histórico"><i data-feather="clock" class="noxss-icon"></i></button>
+                <button class="noxss-tabs__nav-button" data-tab-id="settings" aria-label="Ajustes"><i data-feather="settings" class="noxss-icon"></i></button>
+            </nav>
+        </div>
+
+        <!-- Modais -->
+        <div class="noxss-modal" id="postModal" data-noxss-modal>
+            <div class="noxss-modal__dialog noxss-modal__dialog--large">
+                <div class="noxss-modal__header">
+                    <h3 class="noxss-modal__title">Detalhes do Post</h3>
+                    <button class="noxss-btn noxss-btn--icon noxss-modal__close-btn" data-noxss-modal-close aria-label="Fechar"><i data-feather="x" class="noxss-icon"></i></button>
+                </div>
+                <div class="noxss-modal__body">
+                    <div class="media-container mb-3"></div>
+                    <p><strong>Tags:</strong> <span id="modal-tags" class="text-secondary"></span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="noxss-modal" id="modal-restore-choice" data-noxss-modal>
+            <div class="noxss-modal__dialog">
+                <div class="noxss-modal__header">
+                    <h3 class="noxss-modal__title">Restaurar Backup</h3>
+                    <button class="noxss-btn noxss-btn--icon noxss-modal__close-btn" data-noxss-modal-close aria-label="Fechar"><i data-feather="x" class="noxss-icon"></i></button>
+                </div>
+                <div class="noxss-modal__body">
+                    <p>Como você deseja restaurar este backup?</p>
+                    <p class="text-secondary small"><strong>Mesclar:</strong> Adiciona os dados do backup aos seus dados atuais, sem criar duplicatas. O seu tema atual será mantido.</p>
+                    <p class="text-secondary small"><strong>Substituir:</strong> Apaga todos os seus dados atuais e os substitui completamente pelos dados do backup.</p>
+                </div>
+                <div class="noxss-modal__footer"><button class="noxss-btn noxss-btn--secondary" data-noxss-modal-close>Cancelar</button><button id="overwrite-btn" class="noxss-btn noxss-btn--danger">Substituir</button><button id="merge-btn" class="noxss-btn noxss-btn--primary">Mesclar Dados</button></div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script src="noxss/dist/noxss.js"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                "use strict";
+
+                // Inicializa os ícones Feather com um pequeno atraso para renderizar elementos dinâmicos.
+                if (window.feather) {
+                    setTimeout(() => feather.replace(), 200);
+                }
+
+                const htmlEl = document.documentElement;
+                function updateAccentColor(color) {
+                    htmlEl.setAttribute("data-noxss-palette-gen", color);
+                }
+
+                // ===================================================
+                // MÓDULO DE GESTÃO DE ESTADO (DataManager)
+                // Centraliza todas as operações de dados do aplicativo.
+                // ===================================================
+                const DataManager = (() => {
+                    const APP_DATA_KEY = "appData";
+
+                    // Estrutura de dados padrão para um novo usuário ou em caso de falha.
+                    const defaultState = {
+                        theme: "sakura-dark",
+                        favorites: [],
+                        history: [],
+                        unwantedTags: []
+                    };
+
+                    // O estado atual do aplicativo, mantido em memória.
+                    let appState = {
+                        ...defaultState
+                    };
+
+                    /**
+                     * Salva o estado atual do aplicativo no localStorage.
+                     */
+                    const saveState = () => {
+                        try {
+                            localStorage.setItem(APP_DATA_KEY, JSON.stringify(appState));
+                        } catch (e) {
+                            console.error("Falha ao salvar o estado do aplicativo:", e);
+                            Noxss.Toasts.show({
+                                message: "Erro ao salvar dados.",
+                                status: "danger"
+                            });
+                        }
+                    };
+
+                    /**
+                     * Carrega o estado do localStorage. Se não houver dados ou estiverem corrompidos,
+                     * retorna o estado padrão. Garante compatibilidade futura ao mesclar com o padrão.
+                     */
+                    const loadState = () => {
+                        try {
+                            const savedData = localStorage.getItem(APP_DATA_KEY);
+                            if (savedData) {
+                                const parsedData = JSON.parse(savedData);
+                                // Mescla para garantir que novas chaves no defaultState sejam aplicadas a usuários antigos.
+                                appState = {
+                                    ...defaultState,
+                                    ...parsedData
+                                };
+                            }
+                        } catch (e) {
+                            console.error("Falha ao carregar estado, usando padrão:", e);
+                            appState = {
+                                ...defaultState
+                            };
+                        }
+                        return appState;
+                    };
+
+                    /**
+                     * Valida se o objeto de dados possui a estrutura mínima esperada.
+                     * @param {object} data - O objeto a ser validado.
+                     * @returns {boolean}
+                     */
+                    const validateData = data => data && Array.isArray(data.favorites) && Array.isArray(data.history) && Array.isArray(data.unwantedTags) && typeof data.theme === "string";
+
+                    /**
+                     * Substitui completamente o estado atual pelos dados de um backup.
+                     * @param {string} jsonString - O conteúdo do arquivo de backup em formato JSON.
+                     * @returns {boolean} - True se a operação foi bem-sucedida.
+                     */
+                    const overwriteData = jsonString => {
+                        try {
+                            const data = JSON.parse(jsonString);
+                            if (validateData(data)) {
+                                appState = {
+                                    ...defaultState,
+                                    ...data
+                                };
+                                saveState();
+                                return true;
+                            }
+                            return false;
+                        } catch (e) {
+                            console.error("Erro ao sobrescrever dados:", e);
+                            return false;
+                        }
+                    };
+
+                    /**
+                     * Mescla de forma inteligente os dados de um backup com os dados atuais.
+                     * @param {string} jsonString - O conteúdo do arquivo de backup em formato JSON.
+                     * @returns {boolean} - True se a operação foi bem-sucedida.
+                     */
+                    const mergeData = jsonString => {
+                        try {
+                            const newData = JSON.parse(jsonString);
+                            if (!validateData(newData)) return false;
+
+                            // Mescla listas simples (history, unwantedTags) usando Set para evitar duplicatas.
+                            appState.history = [...new Set([...appState.history, ...newData.history])];
+                            appState.unwantedTags = [...new Set([...appState.unwantedTags, ...newData.unwantedTags])];
+
+                            // Mescla favoritos usando Map para garantir unicidade baseada no ID.
+                            const favoritesMap = new Map(appState.favorites.map(fav => [fav.id, fav]));
+                            newData.favorites.forEach(newFav => {
+                                if (!favoritesMap.has(newFav.id)) {
+                                    favoritesMap.set(newFav.id, newFav);
+                                }
+                            });
+                            appState.favorites = Array.from(favoritesMap.values());
+
+                            // O tema atual é mantido, conforme a regra de negócio.
+                            saveState();
+                            return true;
+                        } catch (e) {
+                            console.error("Erro ao mesclar dados:", e);
+                            return false;
+                        }
+                    };
+
+                    return {
+                        loadState,
+                        saveState,
+                        overwriteData,
+                        mergeData,
+                        exportData: () => JSON.stringify(appState, null, 2),
+                        state: appState
+                    };
+                })();
+
+                // ===================================================
+                // Seletores de UI e Inicialização do Estado
+                // ===================================================
+                const appState = DataManager.loadState();
+                const getEl = id => document.getElementById(id);
+                const query = sel => document.querySelector(sel);
+                const ui = {
+                    feedContainer: getEl("feed-container"),
+                    searchResultsContainer: getEl("search-results"),
+                    favoritesContainer: getEl("favorites-container"),
+                    historyList: getEl("history-list"),
+                    unwantedTagsList: getEl("unwanted-tags-list"),
+                    loadingFeed: getEl("loading"),
+                    loadingSearch: getEl("loading-search"),
+                    loadMoreBtn: getEl("load-more"),
+                    loadMoreSearchBtn: getEl("load-more-search"),
+                    filterTypeSelect: getEl("filter-type"),
+                    searchForm: getEl("search-form"),
+                    searchInput: getEl("search-input"),
+                    autocompleteContainer: getEl("autocomplete-container"),
+                    themeSelect: getEl("theme-select"),
+                    htmlElement: document.documentElement
+                };
+                let currentPage = 0,
+                    currentTags = "",
+                    isLoading = false;
+
+                // ===================================================
+                // Funções de Lógica de Negócio e Renderização
+                // ===================================================
+                const getApiUrl = (tags, page) => {
+                    let tagParam = tags || "hara_id_21";
+                    const unwantedTagsString = appState.unwantedTags.map(tag => `-${tag}`).join(" ");
+                    tagParam = `${tagParam} ${unwantedTagsString}`.trim();
+                    return `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&tags=${encodeURIComponent(tagParam)}&pid=${page}&limit=20&api_key=b389c0c10661711dc58799d2c315c6795c6278b76918e97082bb84b6c903cda628713843b11d48db292cd0b2aba9cc6cd07a02178140f1b5581be262dfe6218b&user_id=5349210`;
+                };
+
+                const renderMedia = (fileUrl, tags) => {
+                    const isVideo = fileUrl.endsWith(".mp4") || fileUrl.endsWith(".webm");
+                    const mediaTag = isVideo ? `<video src="${fileUrl}" controls preload="metadata" style="width:100%; height:auto; display:block; border-radius: var(--noxss-border-radius-base);"></video>` : `<img src="${fileUrl}" alt="${tags}" loading="lazy" class="noxss-card__media">`;
+                    return isVideo ? `<div class="p-0">${mediaTag}</div>` : mediaTag;
+                };
+
+                const loadPosts = async (container, tags = "", page = 0, isSearch = false) => {
+                    if (isLoading) return;
+                    isLoading = true;
+                    const loadingElement = isSearch ? ui.loadingSearch : ui.loadingFeed;
+                    loadingElement.style.display = "block";
+
+                    try {
+                        const response = await fetch(getApiUrl(tags, page));
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const posts = (await response.json()) || [];
+
+                        if (posts.length === 0 && page === 0) container.innerHTML = '<p class="text-secondary text-center">Nenhum resultado encontrado.</p>';
+
+                        posts.forEach(post => {
+                            const isFavorite = appState.favorites.some(fav => fav.id === post.id);
+                            const favButtonClasses = isFavorite ? "noxss-btn--primary" : "noxss-btn--secondary";
+
+                            const cardHTML = `
+                                <div class="noxss-card noxss-card--interactive" data-post-id="${post.id}">
+                                    ${renderMedia(post.file_url, post.tags)}
+                                    <div class="noxss-card__body">
+                                        <p class="tag-list">${post.tags}</p>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                            <button class="noxss-btn noxss-btn--secondary download-btn" data-url="${post.file_url}" aria-label="Baixar"><i data-feather="download" class="noxss-icon"></i></button>
+                                            <button class="noxss-btn noxss-btn--secondary fullscreen-btn" aria-label="Tela Cheia"><i data-feather="maximize" class="noxss-icon"></i></button>
+                                            <button class="noxss-btn ${favButtonClasses} favorite-btn" data-id="${post.id}" aria-label="Favoritar"><i data-feather="heart" class="noxss-icon"></i></button>
+                                            <button class="noxss-btn noxss-btn--secondary share-btn" data-url="${post.file_url}" aria-label="Compartilhar"><i data-feather="share-2" class="noxss-icon"></i></button>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            container.insertAdjacentHTML("beforeend", cardHTML);
+                        });
+                        feather.replace();
+                        if (isSearch && posts.length > 0) ui.loadMoreSearchBtn.style.display = "block";
+                    } catch (error) {
+                        console.error("Erro ao carregar posts:", error);
+                        container.innerHTML = `<div class="noxss-alert noxss-alert--danger"><div class="noxss-alert__icon"><i data-feather="alert-triangle" class="noxss-icon"></i></div><div class="noxss-alert__content">Falha ao carregar conteúdo. Tente novamente.</div></div>`;
+                        feather.replace();
+                    } finally {
+                        loadingElement.style.display = "none";
+                        isLoading = false;
+                    }
+                };
+
+                const updateUILists = () => {
+                    ui.historyList.innerHTML = appState.history.length ? `<ul class="noxss-list noxss-list--inset">${appState.history.map(tag => `<li class="noxss-list-item noxss-list-item--interactive" data-tag="${tag}"><div class="noxss-list-item__content"><span class="noxss-list-item__title">${tag}</span></div><div class="noxss-list-item__trailing"><button class="noxss-btn noxss-btn--icon noxss-btn--danger remove-history" data-tag="${tag}" aria-label="Remover do histórico"><i data-feather="x" class="noxss-icon"></i></button></div></li>`).join("")}</ul>` : '<div class="noxss-alert noxss-alert--info">Seu histórico de busca está vazio.</div>';
+                    const sortBy = getEl("sort-favorites").value;
+                    const sortedFavorites = [...appState.favorites].sort((a, b) => (sortBy === "date" ? new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0) : a.tags.localeCompare(b.tags)));
+                    ui.favoritesContainer.innerHTML = sortedFavorites.length ? sortedFavorites.map(fav => `<div class="noxss-card" data-post-id="${fav.id}">${renderMedia(fav.file_url, fav.tags)}<div class="noxss-card__body"><p class="tag-list">${fav.tags}</p><div style="display: flex; flex-wrap: wrap; gap: 0.5rem;"><button class="noxss-btn noxss-btn--secondary download-btn" data-url="${fav.file_url}"><i data-feather="download" class="noxss-icon"></i></button><button class="noxss-btn noxss-btn--secondary fullscreen-btn"><i data-feather="maximize" class="noxss-icon"></i></button><button class="noxss-btn noxss-btn--danger remove-favorite" data-id="${fav.id}"><i data-feather="trash-2" class="noxss-icon"></i></button></div></div></div>`).join("") : '<div class="noxss-alert noxss-alert--info">Você ainda não tem favoritos.</div>';
+                    ui.unwantedTagsList.innerHTML = appState.unwantedTags.map(tag => `<li class="noxss-list-item"><div class="noxss-list-item__content">${tag}</div><div class="noxss-list-item__trailing"><button class="noxss-btn noxss-btn--icon noxss-btn--danger remove-unwanted-tag" data-tag="${tag}"><i data-feather="x" class="noxss-icon"></i></button></div></li>`).join("");
+                    feather.replace();
+                };
+
+                const handleAutocomplete = async () => {
+                    const queryTerm = ui.searchInput.value.trim();
+                    const lastTerm = queryTerm.split(" ").pop();
+                    const beforeTerm = queryTerm.split(" ").slice(0, -1).join(" ");
+
+                    if (queryTerm.length < 2) {
+                        ui.autocompleteContainer.style.display = "none";
+                        return;
+                    }
+                    try {
+                        const response = await fetch(`https://api.rule34.xxx/autocomplete.php?q=${encodeURIComponent(lastTerm)}`);
+                        const data = await response.json();
+                        ui.autocompleteContainer.innerHTML = "";
+                        if (data.length > 0) {
+                            data.forEach(tag => {
+                                const item = document.createElement("div");
+                                item.className = "suggestion-item";
+                                item.textContent = tag.label;
+                                item.addEventListener("click", () => {
+                                    ui.searchInput.value = beforeTerm + " " + tag.value;
+                                    ui.autocompleteContainer.style.display = "none";
+                                    ui.searchForm.dispatchEvent(new Event("submit"));
+                                });
+                                ui.autocompleteContainer.appendChild(item);
+                            });
+                            ui.autocompleteContainer.style.display = "block";
+                        } else {
+                            ui.autocompleteContainer.style.display = "none";
+                        }
+                    } catch (error) {
+                        console.error("Autocomplete error:", error);
+                        ui.autocompleteContainer.style.display = "none";
+                    }
+                };
+
+                function applyTheme(theme) {
+                    ui.htmlElement.setAttribute("data-theme", theme);
+                    appState.theme = theme;
+                    DataManager.saveState();
+                }
+
+                function initTheme() {
+                    ui.themeSelect.value = appState.theme;
+                    ui.htmlElement.setAttribute("data-theme", appState.theme);
+                    ui.themeSelect.addEventListener("change", e => applyTheme(e.target.value));
+                }
+
+                function bindEvents() {
+                    ui.loadMoreBtn.addEventListener("click", () => {
+                        currentPage++;
+                        loadPosts(ui.feedContainer, currentTags, currentPage, false);
+                    });
+                    ui.loadMoreSearchBtn.addEventListener("click", () => {
+                        currentPage++;
+                        loadPosts(ui.searchResultsContainer, currentTags, currentPage, true);
+                    });
+                    ui.filterTypeSelect.addEventListener("change", e => {
+                        currentTags = e.target.value === "image" ? "-video" : e.target.value === "video" ? "video" : e.target.value;
+                        currentPage = 0;
+                        ui.feedContainer.innerHTML = "";
+                        loadPosts(ui.feedContainer, currentTags, currentPage, false);
+                    });
+                    ui.searchForm.addEventListener("submit", e => {
+                        e.preventDefault();
+                        ui.autocompleteContainer.style.display = "none";
+                        currentTags = ui.searchInput.value;
+                        currentPage = 0;
+                        ui.searchResultsContainer.innerHTML = "";
+                        ui.loadMoreSearchBtn.style.display = "none";
+                        loadPosts(ui.searchResultsContainer, currentTags, 0, true);
+                        if (currentTags && !appState.history.includes(currentTags)) {
+                            appState.history.unshift(currentTags);
+                            if (appState.history.length > 50) appState.history.pop();
+                            DataManager.saveState();
+                            updateUILists();
+                        }
+                    });
+                    ui.searchInput.addEventListener("input", handleAutocomplete);
+                    document.addEventListener("click", e => {
+                        if (!ui.searchForm.contains(e.target)) ui.autocompleteContainer.style.display = "none";
+                    });
+
+                    document.addEventListener("click", e => {
+                        const target = e.target;
+                        const card = target.closest(".noxss-card");
+                        const listItem = target.closest(".noxss-list-item");
+                        if (!card && !listItem) return;
+
+                        if (target.closest(".favorite-btn")) {
+                            e.stopPropagation();
+                            const button = target.closest(".favorite-btn");
+                            const postId = parseInt(card.dataset.postId, 10);
+                            const favIndex = appState.favorites.findIndex(fav => fav.id === postId);
+                            if (favIndex > -1) {
+                                appState.favorites.splice(favIndex, 1);
+                                button.classList.remove("noxss-btn--primary");
+                                button.classList.add("noxss-btn--secondary");
+                            } else {
+                                const post = {
+                                    id: postId,
+                                    file_url: card.querySelector(".download-btn").dataset.url,
+                                    tags: card.querySelector(".tag-list").textContent,
+                                    dateAdded: new Date()
+                                };
+                                appState.favorites.push(post);
+                                button.classList.remove("noxss-btn--secondary");
+                                button.classList.add("noxss-btn--primary");
+                            }
+                            DataManager.saveState();
+                        } else if (target.closest(".remove-favorite")) {
+                            const postIdToRemove = parseInt(card.dataset.postId, 10);
+                            appState.favorites = appState.favorites.filter(fav => fav.id !== postIdToRemove);
+                            DataManager.saveState();
+                            updateUILists();
+                        } else if (target.closest(".remove-history")) {
+                            const tagToRemove = target.closest(".remove-history").dataset.tag;
+                            appState.history = appState.history.filter(h => h !== tagToRemove);
+                            DataManager.saveState();
+                            updateUILists();
+                        } else if (listItem && listItem.dataset.tag && !target.closest(".remove-history")) {
+                            const tag = listItem.dataset.tag;
+                            ui.searchInput.value = tag;
+                            Noxss.Tabs.changeTo("search");
+                            ui.searchForm.dispatchEvent(new Event("submit"));
+                        } else if (card && !target.closest("button, i, a, video")) {
+                            const mediaUrl = card.querySelector(".download-btn").dataset.url;
+                            const tags = card.querySelector(".tag-list").textContent;
+                            const modalMediaContainer = query("#postModal .media-container");
+                            const isVideo = mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".webm");
+                            modalMediaContainer.innerHTML = isVideo ? `<video src="${mediaUrl}" controls autoplay style="width:100%; height:auto; display:block;"></video>` : `<img src="${mediaUrl}" style="width:100%; height:auto; display:block;">`;
+                            getEl("modal-tags").textContent = tags;
+                            Noxss.Modals.open("postModal");
+                        }
+                    });
+
+                    getEl("clear-history").addEventListener("click", () => {
+                        if (confirm("Limpar histórico?")) {
+                            appState.history = [];
+                            DataManager.saveState();
+                            updateUILists();
+                        }
+                    });
+                    getEl("clear-favorites").addEventListener("click", () => {
+                        if (confirm("Limpar favoritos?")) {
+                            appState.favorites = [];
+                            DataManager.saveState();
+                            updateUILists();
+                        }
+                    });
+                    getEl("sort-favorites").addEventListener("change", updateUILists);
+                    getEl("download-json-btn").addEventListener("click", () => {
+                        const blob = new Blob([DataManager.exportData()], {
+                            type: "application/json"
+                        });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "r34_app_backup.json";
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    });
+                    getEl("copy-json-btn").addEventListener("click", e => {
+                        navigator.clipboard.writeText(DataManager.exportData()).then(() => {
+                            const btn = e.currentTarget;
+                            const originalHtml = btn.innerHTML;
+                            btn.innerHTML = '<i data-feather="check" class="noxss-icon"></i> Copiado!';
+                            feather.replace();
+                            setTimeout(() => {
+                                btn.innerHTML = originalHtml;
+                                feather.replace();
+                            }, 2000);
+                        });
+                    });
+
+                    const uploadInput = getEl("upload-json-input");
+                    getEl("import-backup-btn").addEventListener("click", () => uploadInput.click());
+                    uploadInput.addEventListener("change", e => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = res => {
+                            const jsonString = res.target.result;
+                            Noxss.Modals.open("modal-restore-choice");
+
+                            const handleMerge = () => {
+                                if (DataManager.mergeData(jsonString)) {
+                                    Noxss.Toasts.show({
+                                        message: "Backup mesclado com sucesso!",
+                                        status: "success"
+                                    });
+                                    updateUILists();
+                                } else {
+                                    Noxss.Toasts.show({
+                                        message: "Arquivo de backup inválido.",
+                                        status: "danger"
+                                    });
+                                }
+                                Noxss.Modals.close();
+                                e.target.value = null;
+                            };
+
+                            const handleOverwrite = () => {
+                                if (DataManager.overwriteData(jsonString)) {
+                                    Noxss.Toasts.show({
+                                        message: "Backup restaurado com sucesso!",
+                                        status: "success"
+                                    });
+                                    initTheme();
+                                    updateUILists();
+                                } else {
+                                    Noxss.Toasts.show({
+                                        message: "Arquivo de backup inválido.",
+                                        status: "danger"
+                                    });
+                                }
+                                Noxss.Modals.close();
+                                e.target.value = null;
+                            };
+
+                            getEl("merge-btn").addEventListener("click", handleMerge, {
+                                once: true
+                            });
+                            getEl("overwrite-btn").addEventListener("click", handleOverwrite, {
+                                once: true
+                            });
+                        };
+                        reader.readAsText(file);
+                    });
+
+                    getEl("add-unwanted-tag-btn").addEventListener("click", () => {
+                        const input = getEl("unwanted-tag-input");
+                        const tag = input.value.trim().toLowerCase();
+                        if (tag && !appState.unwantedTags.includes(tag)) {
+                            appState.unwantedTags.push(tag);
+                            DataManager.saveState();
+                            updateUILists();
+                            input.value = "";
+                        }
+                    });
+                    getEl("unwanted-tags-list").addEventListener("click", e => {
+                        if (e.target.closest(".remove-unwanted-tag")) {
+                            const tagToRemove = e.target.closest(".remove-unwanted-tag").dataset.tag;
+                            appState.unwantedTags = appState.unwantedTags.filter(t => t !== tagToRemove);
+                            DataManager.saveState();
+                            updateUILists();
+                        }
+                    });
+                }
+
+                const init = () => {
+                    initTheme();
+                    loadPosts(ui.feedContainer, "", 0, false);
+                    updateUILists();
+                    bindEvents();
+                    //updateAccentColor("#63c7d6");
+                };
+
+                init();
+            });
+        </script>
+    </body>
+</html>
