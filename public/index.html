@@ -49,6 +49,21 @@
         --noxss-color-danger-rgb: 255, 92, 122;
       }
 
+      [data-theme="twitter-dark"] {
+        --noxss-bg-main: #15202b;
+        --noxss-bg-surface: #192734;
+        --noxss-bg-elements: #22303c;
+        --noxss-border-color: #38444d;
+        --noxss-text-primary: #ffffff;
+        --noxss-text-secondary: #8899a6;
+        --noxss-accent-primary: #1da1f2;
+        --noxss-accent-primary-hover: #4ab3f3;
+        --noxss-accent-primary-rgb: 29, 161, 242;
+        --noxss-text-on-accent: #ffffff;
+        --noxss-color-danger: #e0245e;
+        --noxss-color-danger-rgb: 224, 36, 94;
+      }
+
       /* UTILITY CLASSES */
       .noxss-desktop-nav {
         display: none;
@@ -242,6 +257,7 @@
                   <select id="theme-select" class="noxss-select">
                     <option value="sakura-dark">Sakura Dark (Rosa)</option>
                     <option value="sakura">Sakura Light (Rosa)</option>
+                    <option value="twitter-dark">Twitter Dark</option>
                     <option value="dark">Noxss Dark</option>
                     <option value="light">Noxss Light</option>
                   </select>
@@ -471,6 +487,7 @@
 
             files = files.filter((file) => {
               const lowerFile = file.toLowerCase();
+              if (lowerFile.endsWith(".json")) return false; // Ignora arquivos .json
               const hasUnwanted = unwanted.some((tag) => lowerFile.includes(tag));
               const matchesSearch = searchTerms.every((term) => lowerFile.includes(term));
               return !hasUnwanted && matchesSearch;
