@@ -161,7 +161,7 @@
 
       /* Estilo Masonry para o Feed */
       .feed-masonry {
-        column-count: 5; /* 5 colunas em telas grandes */
+        column-count: 1; /* Padrão para telas pequenas (mobile) */
         column-gap: 1rem;
       }
       .feed-masonry .noxss-card {
@@ -169,6 +169,25 @@
         width: 100%;
         margin-bottom: 1rem;
         break-inside: avoid; /* Previne que um card seja quebrado entre colunas */
+      }
+
+      /* Ajustes responsivos para o número de colunas */
+      @media (min-width: 768px) {
+        .feed-masonry {
+          column-count: 3; /* Tablets */
+        }
+      }
+
+      @media (min-width: 992px) {
+        .feed-masonry {
+          column-count: 4; /* Desktops */
+        }
+      }
+
+      @media (min-width: 1200px) {
+        .feed-masonry {
+          column-count: 5; /* Desktops grandes */
+        }
       }
     </style>
   </head>
