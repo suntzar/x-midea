@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentPage = 0,
     isLoading = false;
 
-  const POSTS_PER_PAGE = 30;
+  const POSTS_PER_PAGE = 5;
 
   let feedState = { files: [], page: 0, hasMore: true, currentTags: "" };
   let searchState = { files: [], page: 0, hasMore: true, currentTags: "" };
