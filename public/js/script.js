@@ -246,41 +246,6 @@ document.addEventListener("DOMContentLoaded", () => {
     feather.replace();
   };
 
-  const handleAutocomplete = async () => {
-    const queryTerm = ui.searchInput.value.trim();
-    const lastTerm = queryTerm.split(" ").pop();
-    const beforeTerm = queryTerm.split(" ").slice(0, -1).join(" ");
-
-    if (queryTerm.length < 2) {
-      ui.autocompleteContainer.style.display = "none";
-      return;
-    }
-    try {
-      const response = await fetch(`https://api.rule34.xxx/autocomplete.php?q=${encodeURIComponent(lastTerm)}`);
-      const data = await response.json();
-      ui.autocompleteContainer.innerHTML = "";
-      if (data.length > 0) {
-        data.forEach((tag) => {
-          const item = document.createElement("div");
-          item.className = "suggestion-item";
-          item.textContent = tag.label;
-          item.addEventListener("click", () => {
-            ui.searchInput.value = beforeTerm + " " + tag.value;
-            ui.autocompleteContainer.style.display = "none";
-            ui.searchForm.dispatchEvent(new Event("submit"));
-          });
-          ui.autocompleteContainer.appendChild(item);
-        });
-        ui.autocompleteContainer.style.display = "block";
-      } else {
-        ui.autocompleteContainer.style.display = "none";
-      }
-    } catch (error) {
-      console.error("Autocomplete error:", error);
-      ui.autocompleteContainer.style.display = "none";
-    }
-  };
-
   function applyTheme(theme) {
     ui.htmlElement.setAttribute("data-theme", theme);
     appState.theme = theme;
@@ -322,8 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updateUILists();
       }
     });
-    // Autocomplete foi desativado pois não temos uma API de tags.
-    // ui.searchInput.addEventListener("input", handleAutocomplete);
+
     document.addEventListener("click", (e) => {
       if (!ui.searchForm.contains(e.target)) ui.autocompleteContainer.style.display = "none";
     });
@@ -397,10 +361,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const blob = new Blob([DataManager.exportData()], {
         type: "application/json",
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "r34_app_backup.json";
+      const url = URL.createObjectURL(blob); // Cria um URL temporário para o blob
+      const a = document.createElement("a"); // Cria um elemento <a>
+      a.href = url; // Define o href como o URL do blob
+      a.download = "media_vault_backup.json"; // Define o nome do arquivo para download
       a.click();
       URL.revokeObjectURL(url);
     });
