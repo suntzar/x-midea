@@ -1,0 +1,171 @@
+/* TEMAS PERSONALIZADOS DO APP */
+[data-theme="sakura"] {
+  --noxss-bg-main: #fdf8f9;
+  --noxss-bg-surface: #ffffff;
+  --noxss-bg-elements: #f7f1f3;
+  --noxss-border-color: #e5dce0;
+  --noxss-text-primary: #4c3f43;
+  --noxss-text-secondary: #8b7a80;
+  --noxss-accent-primary: #f4a2b8;
+  --noxss-accent-primary-hover: #f8b8c8;
+  --noxss-accent-primary-rgb: 244, 162, 184;
+  --noxss-text-on-accent: #2e1e23;
+  --noxss-color-danger: #d93858;
+  --noxss-color-danger-rgb: 217, 56, 88;
+}
+
+[data-theme="sakura-dark"] {
+  --noxss-bg-main: #1a1617;
+  --noxss-bg-surface: #241e20;
+  --noxss-bg-elements: #2d2628;
+  --noxss-border-color: #3a3234;
+  --noxss-text-primary: #f0e8eb;
+  --noxss-text-secondary: #a19498;
+  --noxss-accent-primary: #f4a2b8;
+  --noxss-accent-primary-hover: #f8b8c8;
+  --noxss-accent-primary-rgb: 244, 162, 184;
+  --noxss-text-on-accent: #2e1e23;
+  --noxss-color-danger: #ff5c7a;
+  --noxss-color-danger-rgb: 255, 92, 122;
+}
+
+[data-theme="twitter-dark"] {
+  --noxss-bg-main: #15202b;
+  --noxss-bg-surface: #192734;
+  --noxss-bg-elements: #22303c;
+  --noxss-border-color: #38444d;
+  --noxss-text-primary: #ffffff;
+  --noxss-text-secondary: #8899a6;
+  --noxss-accent-primary: #1da1f2;
+  --noxss-accent-primary-hover: #4ab3f3;
+  --noxss-accent-primary-rgb: 29, 161, 242;
+  --noxss-text-on-accent: #ffffff;
+  --noxss-color-danger: #e0245e;
+  --noxss-color-danger-rgb: 224, 36, 94;
+}
+
+/* UTILITY CLASSES */
+.noxss-desktop-nav {
+  display: none;
+}
+
+.noxss-mobile-nav {
+  display: flex;
+}
+
+@media (min-width: 768px) {
+  .noxss-desktop-nav {
+    display: flex;
+  }
+
+  .noxss-mobile-nav {
+    display: none;
+  }
+}
+
+.noxss-panel-container {
+  padding: 1rem;
+}
+
+.noxss-input-group {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.noxss-input-group .noxss-input {
+  flex-grow: 1;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.noxss-input-group .noxss-btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-secondary {
+  color: var(--noxss-text-secondary);
+}
+
+.my-4 {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+/* Estilos específicos do App */
+.tag-list {
+  font-size: 0.85rem;
+  color: var(--noxss-text-secondary);
+  margin-bottom: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autocomplete-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background-color: var(--noxss-bg-surface);
+  border: 1px solid var(--noxss-border-color);
+  border-top: none;
+  border-radius: 0 0 var(--noxss-border-radius-base) var(--noxss-border-radius-base);
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.suggestion-item:hover {
+  background-color: var(--noxss-bg-elements);
+}
+
+/* Estilo Masonry para o Feed */
+.feed-masonry {
+  column-count: 1; /* Padrão para telas pequenas (mobile) */
+  column-gap: 1rem;
+}
+.feed-masonry .noxss-card {
+  display: inline-block; /* Essencial para o layout de colunas */
+  width: 100%;
+  margin-bottom: 1rem;
+  break-inside: avoid; /* Previne que um card seja quebrado entre colunas */
+}
+
+/* Ajustes responsivos para o número de colunas */
+@media (min-width: 768px) {
+  .feed-masonry {
+    column-count: 3; /* Tablets */
+  }
+}
+
+@media (min-width: 992px) {
+  .feed-masonry {
+    column-count: 4; /* Desktops */
+  }
+}
+
+@media (min-width: 1200px) {
+  .feed-masonry {
+    column-count: 5; /* Desktops grandes */
+  }
+}
