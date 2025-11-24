@@ -105,8 +105,13 @@ document.addEventListener("DOMContentLoaded", () => {
     htmlElement: document.documentElement,
   };
   let currentPage = 0,
-    currentTags = "",
     isLoading = false;
+
+  const POSTS_PER_PAGE = 30;
+
+  let feedState = { files: [], page: 0, hasMore: true, currentTags: "" };
+  let searchState = { files: [], page: 0, hasMore: true, currentTags: "" };
+  let favoritesState = { files: [], page: 0, hasMore: true };
 
   // ===================================================
   // Funções de Lógica de Negócio e Renderização
@@ -119,27 +124,33 @@ document.addEventListener("DOMContentLoaded", () => {
     return isVideo ? `<div class="p-0">${mediaTag}</div>` : mediaTag;
   };
 
-  const loadPosts = async (container, searchTags = "", isSearch = false) => {
+  const loadPosts = async (container, searchTags = "", isSearch = false, isLoadMore = false) => {
     if (isLoading) return;
     isLoading = true;
+
+    const state = isSearch ? searchState : feedState;
     const loadingElement = isSearch ? ui.loadingSearch : ui.loadingFeed;
+    const loadMoreBtn = isSearch ? ui.loadMoreSearchBtn : ui.loadMoreBtn;
+
     loadingElement.style.display = "block";
-    if (isSearch) ui.loadMoreSearchBtn.style.display = "none";
+    loadMoreBtn.style.display = "none";
 
     try {
-      const response = await fetch(getApiUrl());
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      let files = data.files || [];
-
-      // Filtra os arquivos com base na busca e nas tags indesejadas
+      if (!isLoadMore) {
+        const response = await fetch(getApiUrl());
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        state.files = data.files || [];
+        state.page = 0;
+        container.innerHTML = "";
+      }
       const searchTerms = searchTags
         .toLowerCase()
         .split(" ")
         .filter((t) => t);
       const unwanted = appState.unwantedTags.map((t) => t.toLowerCase());
 
-      files = files.filter((file) => {
+      let filteredFiles = state.files.filter((file) => {
         const lowerFile = file.toLowerCase();
         if (lowerFile.endsWith(".json")) return false; // Ignora arquivos .json
         const hasUnwanted = unwanted.some((tag) => lowerFile.includes(tag));
@@ -147,9 +158,24 @@ document.addEventListener("DOMContentLoaded", () => {
         return !hasUnwanted && matchesSearch;
       });
 
-      if (files.length === 0) container.innerHTML = '<p class="text-secondary text-center">Nenhuma mídia encontrada.</p>';
+      if (!isLoadMore && !isSearch) {
+        // Aleatorizar o feed
+        for (let i = filteredFiles.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [filteredFiles[i], filteredFiles[j]] = [filteredFiles[j], filteredFiles[i]];
+        }
+        state.files = filteredFiles; // Salva a ordem aleatória
+      } else if (!isLoadMore) {
+        state.files = filteredFiles;
+      }
 
-      files.forEach((file) => {
+      const start = state.page * POSTS_PER_PAGE;
+      const end = start + POSTS_PER_PAGE;
+      const filesToRender = state.files.slice(start, end);
+
+      if (filesToRender.length === 0 && state.page === 0) container.innerHTML = '<p class="text-secondary text-center">Nenhuma mídia encontrada.</p>';
+
+      filesToRender.forEach((file) => {
         const isFavorite = appState.favorites.includes(file);
         const favButtonClasses = isFavorite ? "noxss-btn--primary" : "noxss-btn--secondary";
 
@@ -167,6 +193,15 @@ document.addEventListener("DOMContentLoaded", () => {
                                 </div>`;
         container.insertAdjacentHTML("beforeend", cardHTML);
       });
+
+      state.page++;
+      state.hasMore = state.files.length > end;
+
+      if (state.hasMore) {
+        loadMoreBtn.style.display = "block";
+      } else {
+        loadMoreBtn.style.display = "none";
+      }
       feather.replace();
     } catch (error) {
       console.error("Erro ao carregar posts:", error);
@@ -178,11 +213,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const renderFavorites = (isLoadMore = false) => {
+    if (!isLoadMore) {
+      favoritesState.page = 0;
+      ui.favoritesContainer.innerHTML = "";
+    }
+
+    const sortedFavorites = [...appState.favorites].sort().reverse();
+    favoritesState.files = sortedFavorites;
+
+    const start = favoritesState.page * POSTS_PER_PAGE;
+    const end = start + POSTS_PER_PAGE;
+    const favoritesToRender = favoritesState.files.slice(start, end);
+
+    if (favoritesToRender.length === 0 && favoritesState.page === 0) {
+      ui.favoritesContainer.innerHTML = '<div class="noxss-alert noxss-alert--info">Você ainda não tem favoritos.</div>';
+      return;
+    }
+
+    const favoritesHTML = favoritesToRender.map((favPath) => `<div class="noxss-card" data-file-path="${favPath}">${renderMedia(favPath, favPath)}<div class="noxss-card__body"><p class="tag-list">${favPath.split("/").pop()}</p><div style="display: flex; flex-wrap: wrap; gap: 0.5rem;"><a href="/media/${favPath}" download class="noxss-btn noxss-btn--secondary download-btn"><i data-feather="download" class="noxss-icon"></i></a><button class="noxss-btn noxss-btn--secondary fullscreen-btn"><i data-feather="maximize" class="noxss-icon"></i></button><button class="noxss-btn noxss-btn--danger remove-favorite" data-path="${favPath}"><i data-feather="trash-2" class="noxss-icon"></i></button></div></div></div>`).join("");
+    ui.favoritesContainer.insertAdjacentHTML("beforeend", favoritesHTML);
+
+    favoritesState.page++;
+    favoritesState.hasMore = favoritesState.files.length > end;
+    // Note: Favorites don't have a "load more" button in this implementation, but this logic supports it if you add one.
+  };
+
   const updateUILists = () => {
     ui.historyList.innerHTML = appState.history.length ? `<ul class="noxss-list noxss-list--inset">${appState.history.map((tag) => `<li class="noxss-list-item noxss-list-item--interactive" data-tag="${tag}"><div class="noxss-list-item__content"><span class="noxss-list-item__title">${tag}</span></div><div class="noxss-list-item__trailing"><button class="noxss-btn noxss-btn--icon noxss-btn--danger remove-history" data-tag="${tag}" aria-label="Remover do histórico"><i data-feather="x" class="noxss-icon"></i></button></div></li>`).join("")}</ul>` : '<div class="noxss-alert noxss-alert--info">Seu histórico de busca está vazio.</div>';
-    // Simplificado: Ordenação de favoritos não é mais necessária como antes.
-    const sortedFavorites = [...appState.favorites].sort().reverse();
-    ui.favoritesContainer.innerHTML = sortedFavorites.length ? sortedFavorites.map((favPath) => `<div class="noxss-card" data-file-path="${favPath}">${renderMedia(favPath, favPath)}<div class="noxss-card__body"><p class="tag-list">${favPath.split("/").pop()}</p><div style="display: flex; flex-wrap: wrap; gap: 0.5rem;"><a href="/media/${favPath}" download class="noxss-btn noxss-btn--secondary download-btn"><i data-feather="download" class="noxss-icon"></i></a><button class="noxss-btn noxss-btn--secondary fullscreen-btn"><i data-feather="maximize" class="noxss-icon"></i></button><button class="noxss-btn noxss-btn--danger remove-favorite" data-path="${favPath}"><i data-feather="trash-2" class="noxss-icon"></i></button></div></div></div>`).join("") : '<div class="noxss-alert noxss-alert--info">Você ainda não tem favoritos.</div>';
+    renderFavorites();
     ui.unwantedTagsList.innerHTML = appState.unwantedTags.map((tag) => `<li class="noxss-list-item"><div class="noxss-list-item__content">${tag}</div><div class="noxss-list-item__trailing"><button class="noxss-btn noxss-btn--icon noxss-btn--danger remove-unwanted-tag" data-tag="${tag}"><i data-feather="x" class="noxss-icon"></i></button></div></li>`).join("");
     feather.replace();
   };
@@ -235,24 +294,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function bindEvents() {
-    // Botão "Carregar mais" removido pois agora carregamos tudo de uma vez.
-    ui.loadMoreBtn.style.display = "none";
+    ui.loadMoreBtn.addEventListener("click", () => {
+      loadPosts(ui.feedContainer, feedState.currentTags, false, true);
+    });
+
+    ui.loadMoreSearchBtn.addEventListener("click", () => {
+      loadPosts(ui.searchResultsContainer, searchState.currentTags, true, true);
+    });
 
     ui.filterTypeSelect.addEventListener("change", (e) => {
       const filter = e.target.value;
-      currentTags = filter === "image" ? ".jpg .jpeg .png .webp .gif" : filter === "video" ? ".mp4 .webm" : "";
-      ui.feedContainer.innerHTML = "";
-      loadPosts(ui.feedContainer, currentTags, false);
+      feedState.currentTags = filter === "image" ? ".jpg .jpeg .png .webp .gif" : filter === "video" ? ".mp4 .webm" : "";
+      if (filter === "index") feedState.currentTags = "";
+      loadPosts(ui.feedContainer, feedState.currentTags, false, false);
     });
 
     ui.searchForm.addEventListener("submit", (e) => {
       e.preventDefault();
       ui.autocompleteContainer.style.display = "none";
-      currentTags = ui.searchInput.value;
-      ui.searchResultsContainer.innerHTML = "";
-      loadPosts(ui.searchResultsContainer, currentTags, true);
-      if (currentTags && !appState.history.includes(currentTags)) {
-        appState.history.unshift(currentTags);
+      searchState.currentTags = ui.searchInput.value;
+
+      loadPosts(ui.searchResultsContainer, searchState.currentTags, true, false);
+      if (searchState.currentTags && !appState.history.includes(searchState.currentTags)) {
+        appState.history.unshift(searchState.currentTags);
         if (appState.history.length > 50) appState.history.pop();
         DataManager.saveState();
         updateUILists();
@@ -289,6 +353,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const pathToRemove = card.dataset.filePath;
         appState.favorites = appState.favorites.filter((fav) => fav !== pathToRemove);
         DataManager.saveState();
+        // Re-render favorites to remove the card
         updateUILists();
       } else if (target.closest(".remove-history")) {
         const tagToRemove = target.closest(".remove-history").dataset.tag;
@@ -429,7 +494,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const init = () => {
     initTheme();
-    loadPosts(ui.feedContainer, "", false);
+    loadPosts(ui.feedContainer, feedState.currentTags, false, false);
     updateUILists();
     bindEvents();
     //updateAccentColor("#63c7d6");
