@@ -1,4 +1,3 @@
-
 gallery-dl \
   --cookies cookies.txt \
   -o "video=orig" \
@@ -9,4 +8,4 @@ gallery-dl \
   --retries 20 \
   --range 1-9999999 \
   --directory "TwitterBookmarks" \
-  "https://twitter.com/i/bookmarks"
+  "https://br.pinterest.com/fflorentino/pixel-art/"
