@@ -173,15 +173,16 @@
 
     <!-- Modais -->
     <div class="noxss-modal" id="postModal" data-noxss-modal>
-      <div class="noxss-modal__dialog noxss-modal__dialog--large">
+      <div class="noxss-modal__dialog modal-full-width">
         <div class="noxss-modal__header">
           <h3 class="noxss-modal__title">Detalhes do Post</h3>
           <button class="noxss-btn noxss-btn--icon noxss-modal__close-btn" data-noxss-modal-close aria-label="Fechar"><i data-feather="x" class="noxss-icon"></i></button>
         </div>
         <div class="noxss-modal__body">
-          <div class="media-container mb-3"></div>
-          <p><strong>Tags:</strong> <span id="modal-tags" class="text-secondary"></span></p>
-          <div id="modal-details"></div>
+          <div class="modal-content-grid">
+            <div class="media-container"></div>
+            <div id="modal-details" class="modal-details-column"></div>
+          </div>
         </div>
       </div>
     </div>

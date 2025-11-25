@@ -1,27 +1,20 @@
 document.addEventListener("DOMContentLoaded", () => {
   "use strict";
 
-  // Inicializa os ícones Feather com um pequeno atraso para renderizar elementos dinâmicos.
   if (window.feather) {
     setTimeout(() => feather.replace(), 200);
   }
 
-  const htmlEl = document.documentElement;
-  function updateAccentColor(color) {
-    htmlEl.setAttribute("data-noxss-palette-gen", color);
-  }
-
   // ===================================================
   // MÓDULO DE GESTÃO DE ESTADO (DataManager)
-  // Centraliza todas as operações de dados do aplicativo.
   // ===================================================
   const DataManager = (() => {
     const APP_DATA_KEY = "mediaAppData";
     const defaultState = {
       theme: "sakura-dark",
-      favorites: [], // Armazenará caminhos de arquivo
-      history: [], // Armazenará termos de busca
-      unwantedTags: [], // Manteremos para filtragem de nome de arquivo
+      favorites: [],
+      history: [],
+      unwantedTags: [],
     };
     let appState = { ...defaultState };
 
@@ -49,7 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const validateData = (data) => data && Array.isArray(data.favorites) && Array.isArray(data.history) && Array.isArray(data.unwantedTags) && typeof data.theme === "string";
-
     const overwriteData = (jsonString) => {
       try {
         const data = JSON.parse(jsonString);
@@ -63,7 +55,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return false;
       }
     };
-
     const mergeData = (jsonString) => {
       try {
         const newData = JSON.parse(jsonString);
@@ -77,7 +68,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return false;
       }
     };
-
     return { loadState, saveState, overwriteData, mergeData, exportData: () => JSON.stringify(appState, null, 2), state: appState };
   })();
 
@@ -102,14 +92,12 @@ document.addEventListener("DOMContentLoaded", () => {
     searchInput: getEl("search-input"),
     autocompleteContainer: getEl("autocomplete-container"),
     themeSelect: getEl("theme-select"),
-    modalDetailsContainer: getEl("modal-details"), // Added this line
+    modalMediaContainer: query("#postModal .media-container"),
+    modalDetailsContainer: getEl("modal-details"),
     htmlElement: document.documentElement,
   };
-  let currentPage = 0,
-    isLoading = false;
-
-  const POSTS_PER_PAGE = 5;
-
+  let isLoading = false;
+  const POSTS_PER_PAGE = 10;
   let feedState = { files: [], page: 0, hasMore: true, currentTags: "" };
   let searchState = { files: [], page: 0, hasMore: true, currentTags: "" };
   let favoritesState = { files: [], page: 0, hasMore: true };
@@ -117,117 +105,233 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===================================================
   // Funções de Lógica de Negócio e Renderização
   // ===================================================
-  const getApiUrl = () => "/api/media";
 
+  // --- Funções para o Masonry Layout com CSS Grid ---
+  function resizeMasonryItem(item){
+    const grid = item.closest('.feed-masonry');
+    if (!grid) return;
+    const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'));
+    const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'));
+    
+    const itemContent = item.querySelector('.noxss-card, .tweet-card');
+    if (!itemContent) return;
+
+    const itemContentHeight = itemContent.getBoundingClientRect().height;
+    const rowSpan = Math.ceil((itemContentHeight + rowGap) / (rowHeight + rowGap));
+    
+    item.style.gridRowEnd = 'span ' + rowSpan;
+  }
+  
+  function resizeAllMasonryItems(container){
+      if (!container) return;
+      const allItems = container.querySelectorAll('.tweet-card, .noxss-card');
+      if (allItems.length === 0) return;
+      
+      const promises = Array.from(allItems).map(item => {
+          const images = item.querySelectorAll('img, video');
+          return Promise.all(Array.from(images).map(media => {
+              return new Promise(resolve => {
+                  if (media.tagName === 'IMG' && media.complete) return resolve();
+                  if (media.tagName === 'VIDEO' && media.readyState > 0) return resolve();
+                  media.addEventListener('loadeddata', resolve, { once: true });
+                  media.addEventListener('load', resolve, { once: true });
+                  media.addEventListener('error', resolve, { once: true }); // Resolve on error too
+              });
+          }));
+      });
+
+      Promise.all(promises).then(() => {
+          allItems.forEach(item => {
+            let wrapper = item.parentElement;
+            if (!wrapper.classList.contains('masonry-item-wrapper')) {
+                wrapper = document.createElement('div');
+                wrapper.className = 'masonry-item-wrapper';
+                item.parentNode.insertBefore(wrapper, item);
+                wrapper.appendChild(item);
+            }
+            resizeMasonryItem(wrapper);
+          });
+      });
+  }
+
+  function debounce(fn, delay) {
+      let timeoutId;
+      return function(...args) {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => fn.apply(this, args), delay);
+      };
+  }
+
+  window.addEventListener('resize', debounce(() => {
+      if (ui.feedContainer.offsetParent) resizeAllMasonryItems(ui.feedContainer);
+      if (ui.searchResultsContainer.offsetParent) resizeAllMasonryItems(ui.searchResultsContainer);
+      if (ui.favoritesContainer.offsetParent) resizeAllMasonryItems(ui.favoritesContainer);
+  }, 250));
+  // --- Fim das funções de Masonry ---
+
+  const getApiUrl = () => "/api/media";
+  const formatNumber = (num) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+    return num;
+  };
+  const timeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + "a";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + "m";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + "d";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + "h";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + "min";
+    return Math.floor(seconds) + "s";
+  };
+  const formatTweetContent = (text, hashtags = [], mentions = []) => {
+    let formattedText = text;
+    hashtags.forEach(tag => {
+        const regex = new RegExp(`#${tag}`, "gi");
+        formattedText = formattedText.replace(regex, `<a href="#" class="hashtag-link" data-tag="${tag}">#${tag}</a>`);
+    });
+    mentions.forEach(mention => {
+        const regex = new RegExp(`@${mention.nick}`, "gi");
+        formattedText = formattedText.replace(regex, `<a href="https://twitter.com/${mention.name}" target="_blank" class="mention-link">@${mention.nick}</a>`);
+    });
+    return formattedText.replace(/\n/g, '<br>');
+  };
   const renderMedia = (file) => {
     const fileUrl = file.filePath;
     const isVideo = fileUrl.endsWith(".mp4") || fileUrl.endsWith(".webm");
-    const altText = file.metadata && file.metadata.description ? file.metadata.description : file.metadata && file.metadata.content ? file.metadata.content : fileUrl;
-
+    const altText = file.metadata?.content || fileUrl;
     if (isVideo) {
-        // Use a thumbnail from metadata if available
-        const videoThumbnail = file.metadata && file.metadata.thumb ? `/media/${file.metadata.thumb}` : '';
-        return `<div class="p-0"><video src="/media/${fileUrl}" controls preload="metadata" ${videoThumbnail ? `poster="${videoThumbnail}"` : ''} style="width:100%; height:auto; display:block; border-radius: var(--noxss-border-radius-base);"></video></div>`;
+      const thumb = file.metadata?.thumb ? `/media/${file.metadata.thumb}` : '';
+      return `<video src="/media/${fileUrl}" controls loop preload="metadata" poster="${thumb}" class="card-media-video"></video>`;
     } else {
-        return `<img src="/media/${fileUrl}" alt="${altText}" loading="lazy" class="noxss-card__media">`;
+      return `<img src="/media/${fileUrl}" alt="${altText}" loading="lazy" class="card-media-image">`;
     }
+  };
+  
+  const createCardHTML = (file) => {
+      const { metadata, filePath } = file;
+      if (!metadata) {
+          // Fallback for media without metadata
+          return `
+              <div class="noxss-card noxss-card--interactive" data-file-path="${filePath}">
+                  ${renderMedia(file)}
+                  <div class="noxss-card__body">
+                      <p class="tag-list">${filePath.split("/").pop()}</p>
+                  </div>
+              </div>`;
+      }
+  
+      const isFavorite = appState.favorites.includes(filePath);
+      const favButtonClasses = isFavorite ? "noxss-btn--primary" : "noxss-btn--secondary";
+      const authorUrl = `https://twitter.com/${metadata.author.name}`;
+      const tweetUrl = `https://twitter.com/i/web/status/${metadata.tweet_id}`;
+  
+      return `
+      <div class="noxss-card tweet-card" data-file-path="${filePath}">
+          <div class="tweet-card__header">
+              <a href="${authorUrl}" target="_blank" class="tweet-card__author">
+                  <img src="${metadata.author.profile_image}" alt="${metadata.author.nick}" class="tweet-card__avatar">
+                  <div class="tweet-card__author-info">
+                      <span class="tweet-card__author-name">${metadata.author.name} ${metadata.author.verified ? '<i data-feather="check-circle" class="verified-badge"></i>' : ''}</span>
+                      <span class="tweet-card__author-nick">@${metadata.author.nick}</span>
+                  </div>
+              </a>
+              <a href="${tweetUrl}" target="_blank" class="tweet-card__timestamp">${timeAgo(metadata.date)}</a>
+          </div>
+          <div class="tweet-card__body">
+              <p>${formatTweetContent(metadata.content, metadata.hashtags, metadata.mentions)}</p>
+          </div>
+          ${renderMedia(file)}
+          <div class="tweet-card__footer">
+              <div class="tweet-card__stats">
+                  <span><i data-feather="message-circle"></i> ${formatNumber(metadata.reply_count)}</span>
+                  <span><i data-feather="repeat"></i> ${formatNumber(metadata.retweet_count)}</span>
+                  <span><i data-feather="heart"></i> ${formatNumber(metadata.favorite_count)}</span>
+                  <span><i data-feather="bar-chart-2"></i> ${formatNumber(metadata.view_count)}</span>
+              </div>
+              <div class="tweet-card__actions">
+                  <button class="noxss-btn noxss-btn--icon favorite-btn ${favButtonClasses}" data-path="${filePath}" aria-label="Favoritar">
+                      <i data-feather="heart"></i>
+                  </button>
+                  <a href="/media/${filePath}" download class="noxss-btn noxss-btn--icon download-btn" aria-label="Baixar">
+                      <i data-feather="download"></i>
+                  </a>
+              </div>
+          </div>
+      </div>`;
   };
 
   const loadPosts = async (container, searchTags = "", isSearch = false, isLoadMore = false) => {
     if (isLoading) return;
     isLoading = true;
-
     const state = isSearch ? searchState : feedState;
     const loadingElement = isSearch ? ui.loadingSearch : ui.loadingFeed;
     const loadMoreBtn = isSearch ? ui.loadMoreSearchBtn : ui.loadMoreBtn;
-
     loadingElement.style.display = "block";
-    loadMoreBtn.style.display = "none";
+    if (loadMoreBtn) loadMoreBtn.style.display = "none";
 
     try {
       if (!isLoadMore) {
         const response = await fetch(getApiUrl());
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-        state.files = data || []; // API now returns array of objects directly
+        state.files = data.sort((a, b) => new Date(b.metadata?.date_bookmarked) - new Date(a.metadata?.date_bookmarked)) || [];
         state.page = 0;
         container.innerHTML = "";
       }
-      const searchTerms = searchTags
-        .toLowerCase()
-        .split(" ")
-        .filter((t) => t);
+
+      const searchTerms = searchTags.toLowerCase().split(" ").filter((t) => t);
       const unwanted = appState.unwantedTags.map((t) => t.toLowerCase());
 
-      let filteredFiles = state.files.filter((file) => {
-        // file is now an object { filePath: '...', metadata: {...} }
+      const filteredFiles = state.files.filter((file) => {
         const lowerFilePath = file.filePath.toLowerCase();
-        
         const hasUnwanted = unwanted.some((tag) => lowerFilePath.includes(tag));
+        if (hasUnwanted) return false;
+
+        if (searchTerms.length === 0) return true;
+
         const matchesSearch = searchTerms.every((term) => {
-            // Search in filePath and metadata content/hashtags if available
-            return lowerFilePath.includes(term) || 
-                   (file.metadata && file.metadata.content && file.metadata.content.toLowerCase().includes(term)) ||
-                   (file.metadata && file.metadata.hashtags && file.metadata.hashtags.some(hashtag => hashtag.toLowerCase().includes(term)));
+            const meta = file.metadata;
+            if (lowerFilePath.includes(term)) return true;
+            if (!meta) return false;
+            if (meta.content?.toLowerCase().includes(term)) return true;
+            if (meta.hashtags?.some(tag => tag.toLowerCase().includes(term))) return true;
+            if (meta.author?.name?.toLowerCase().includes(term)) return true;
+            if (meta.author?.nick?.toLowerCase().includes(term)) return true;
+            if (meta.mentions?.some(m => m.name.toLowerCase().includes(term) || m.nick.toLowerCase().includes(term))) return true;
+            return false;
         });
-        return !hasUnwanted && matchesSearch;
+        return matchesSearch;
       });
 
-      if (!isLoadMore && !isSearch) {
-        // Aleatorizar o feed
-        for (let i = filteredFiles.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [filteredFiles[i], filteredFiles[j]] = [filteredFiles[j], filteredFiles[i]];
-        }
-        state.files = filteredFiles; // Salva a ordem aleatória
-      } else if (!isLoadMore) {
+      if (!isLoadMore) {
         state.files = filteredFiles;
       }
-
+      
       const start = state.page * POSTS_PER_PAGE;
       const end = start + POSTS_PER_PAGE;
       const filesToRender = state.files.slice(start, end);
 
       if (filesToRender.length === 0 && state.page === 0) container.innerHTML = '<p class="text-secondary text-center">Nenhuma mídia encontrada.</p>';
-
-      filesToRender.forEach((file) => { // file is now an object { filePath: '...', metadata: {...} }
-        const isFavorite = appState.favorites.includes(file.filePath);
-        const favButtonClasses = isFavorite ? "noxss-btn--primary" : "noxss-btn--secondary";
-        
-        const fileNameOnly = file.filePath.split("/").pop();
-        const tagsDisplay = file.metadata && file.metadata.hashtags && file.metadata.hashtags.length > 0
-                            ? file.metadata.hashtags.map(tag => `#${tag}`).join(' ')
-                            : fileNameOnly;
-
-        const cardHTML = `
-                                <div class="noxss-card noxss-card--interactive" data-file-path="${file.filePath}">
-                                    ${renderMedia(file)}
-                                    <div class="noxss-card__body">
-                                        <p class="tag-list">${tagsDisplay}</p>
-                                        ${file.metadata && file.metadata.author ? `<p class="text-secondary small">Por: @${file.metadata.author.nick}</p>` : ''}
-                                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                            <a href="/media/${file.filePath}" download class="noxss-btn noxss-btn--secondary download-btn" aria-label="Baixar"><i data-feather="download" class="noxss-icon"></i></a>
-                                            <button class="noxss-btn noxss-btn--secondary fullscreen-btn" aria-label="Tela Cheia" data-file-path="${file.filePath}"><i data-feather="maximize" class="noxss-icon"></i></button>
-                                            <button class="noxss-btn ${favButtonClasses} favorite-btn" data-path="${file.filePath}" aria-label="Favoritar"><i data-feather="heart" class="noxss-icon"></i></button>
-                                        </div>
-                                    </div>
-                                </div>`;
-        container.insertAdjacentHTML("beforeend", cardHTML);
+      
+      filesToRender.forEach((file) => {
+        container.insertAdjacentHTML("beforeend", createCardHTML(file));
       });
 
       state.page++;
       state.hasMore = state.files.length > end;
-
-      if (state.hasMore) {
-        loadMoreBtn.style.display = "block";
-      } else {
-        loadMoreBtn.style.display = "none";
-      }
+      if (loadMoreBtn) loadMoreBtn.style.display = state.hasMore ? "block" : "none";
+      
       feather.replace();
+      resizeAllMasonryItems(container);
     } catch (error) {
       console.error("Erro ao carregar posts:", error);
-      container.innerHTML = `<div class="noxss-alert noxss-alert--danger"><div class="noxss-alert__icon"><i data-feather="alert-triangle" class="noxss-icon"></i></div><div class="noxss-alert__content">Falha ao carregar conteúdo. Tente novamente.</div></div>`;
-      feather.replace();
+      container.innerHTML = `<div class="noxss-alert noxss-alert--danger">Falha ao carregar conteúdo. Tente novamente.</div>`;
     } finally {
       loadingElement.style.display = "none";
       isLoading = false;
@@ -235,15 +339,14 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const renderFavorites = (isLoadMore = false) => {
+    // This function will now use the main `loadPosts` logic by filtering `feedState`
     if (!isLoadMore) {
-      favoritesState.page = 0;
-      ui.favoritesContainer.innerHTML = "";
+        favoritesState.page = 0;
+        ui.favoritesContainer.innerHTML = "";
     }
-
-    const sortedFavoritesPaths = [...appState.favorites].sort().reverse();
-    // Retrieve full file objects for favorites from the already loaded feedState.files
-    // This assumes that all favorite items would have been loaded into feedState.files at some point.
-    favoritesState.files = sortedFavoritesPaths.map(favPath => feedState.files.find(f => f.filePath === favPath)).filter(Boolean);
+    const allFiles = feedState.files.length > 0 ? feedState.files : (searchState.files.length > 0 ? searchState.files : []);
+    const favoriteFiles = allFiles.filter(file => appState.favorites.includes(file.filePath));
+    favoritesState.files = favoriteFiles;
 
     const start = favoritesState.page * POSTS_PER_PAGE;
     const end = start + POSTS_PER_PAGE;
@@ -254,30 +357,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const favoritesHTML = favoritesToRender.map((favItem) => {
-        const fileNameOnly = favItem.filePath.split("/").pop();
-        const tagsDisplay = favItem.metadata && favItem.metadata.hashtags && favItem.metadata.hashtags.length > 0
-                            ? favItem.metadata.hashtags.map(tag => `#${tag}`).join(' ')
-                            : fileNameOnly;
-
-        return `<div class="noxss-card" data-file-path="${favItem.filePath}">
-                    ${renderMedia(favItem)}
-                    <div class="noxss-card__body">
-                        <p class="tag-list">${tagsDisplay}</p>
-                        ${favItem.metadata && favItem.metadata.author ? `<p class="text-secondary small">Por: @${favItem.metadata.author.nick}</p>` : ''}
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                            <a href="/media/${favItem.filePath}" download class="noxss-btn noxss-btn--secondary download-btn"><i data-feather="download" class="noxss-icon"></i></a>
-                            <button class="noxss-btn noxss-btn--secondary fullscreen-btn" data-file-path="${favItem.filePath}"><i data-feather="maximize" class="noxss-icon"></i></button>
-                            <button class="noxss-btn noxss-btn--danger remove-favorite" data-path="${favItem.filePath}"><i data-feather="trash-2" class="noxss-icon"></i></button>
-                        </div>
-                    </div>
-                </div>`;
-    }).join("");
-    ui.favoritesContainer.insertAdjacentHTML("beforeend", favoritesHTML);
+    favoritesToRender.forEach(favItem => {
+        ui.favoritesContainer.insertAdjacentHTML("beforeend", createCardHTML(favItem));
+    });
 
     favoritesState.page++;
     favoritesState.hasMore = favoritesState.files.length > end;
-    // Note: Favorites don't have a "load more" button in this implementation, but this logic supports it if you add one.
+    feather.replace();
+    resizeAllMasonryItems(ui.favoritesContainer);
   };
 
   const updateUILists = () => {
@@ -300,26 +387,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function bindEvents() {
-    ui.loadMoreBtn.addEventListener("click", () => {
-      loadPosts(ui.feedContainer, feedState.currentTags, false, true);
-    });
-
-    ui.loadMoreSearchBtn.addEventListener("click", () => {
-      loadPosts(ui.searchResultsContainer, searchState.currentTags, true, true);
-    });
-
+    ui.loadMoreBtn.addEventListener("click", () => loadPosts(ui.feedContainer, feedState.currentTags, false, true));
+    ui.loadMoreSearchBtn.addEventListener("click", () => loadPosts(ui.searchResultsContainer, searchState.currentTags, true, true));
     ui.filterTypeSelect.addEventListener("change", (e) => {
       const filter = e.target.value;
       feedState.currentTags = filter === "image" ? ".jpg .jpeg .png .webp .gif" : filter === "video" ? ".mp4 .webm" : "";
       if (filter === "index") feedState.currentTags = "";
       loadPosts(ui.feedContainer, feedState.currentTags, false, false);
     });
-
     ui.searchForm.addEventListener("submit", (e) => {
       e.preventDefault();
       ui.autocompleteContainer.style.display = "none";
       searchState.currentTags = ui.searchInput.value;
-
       loadPosts(ui.searchResultsContainer, searchState.currentTags, true, false);
       if (searchState.currentTags && !appState.history.includes(searchState.currentTags)) {
         appState.history.unshift(searchState.currentTags);
@@ -329,225 +408,169 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    document.addEventListener("click", (e) => {
-      if (!ui.searchForm.contains(e.target)) ui.autocompleteContainer.style.display = "none";
-    });
-
-    document.addEventListener("click", (e) => {
+    document.body.addEventListener("click", (e) => {
       const target = e.target;
-      const card = target.closest(".noxss-card");
-      const listItem = target.closest(".noxss-list-item");
-      if (!card && !listItem) return;
+      // Handle hashtag clicks
+      if (target.classList.contains('hashtag-link')) {
+          e.preventDefault();
+          const tag = target.dataset.tag;
+          ui.searchInput.value = tag;
+          document.querySelector('.noxss-tabs__header-button[data-tab-id="search"]').click();
+          ui.searchForm.dispatchEvent(new Event("submit"));
+          return;
+      }
+      
+      const card = target.closest(".tweet-card");
+      if (!card) return;
 
       if (target.closest(".favorite-btn")) {
         e.stopPropagation();
         const button = target.closest(".favorite-btn");
-        const filePath = card.dataset.filePath;
+        const filePath = button.dataset.path;
         const favIndex = appState.favorites.indexOf(filePath);
         if (favIndex > -1) {
           appState.favorites.splice(favIndex, 1);
-          button.classList.remove("noxss-btn--primary");
-          button.classList.add("noxss-btn--secondary");
+          button.classList.replace("noxss-btn--primary", "noxss-btn--secondary");
         } else {
           appState.favorites.push(filePath);
-          button.classList.remove("noxss-btn--secondary");
-          button.classList.add("noxss-btn--primary");
+          button.classList.replace("noxss-btn--secondary", "noxss-btn--primary");
         }
         DataManager.saveState();
-      } else if (target.closest(".remove-favorite")) {
-        const pathToRemove = card.dataset.filePath;
-        appState.favorites = appState.favorites.filter((fav) => fav !== pathToRemove);
-        DataManager.saveState();
-        // Re-render favorites to remove the card
-        updateUILists();
-      } else if (target.closest(".remove-history")) {
-        const tagToRemove = target.closest(".remove-history").dataset.tag;
-        appState.history = appState.history.filter((h) => h !== tagToRemove);
-        DataManager.saveState();
-        updateUILists();
-      } else if (listItem && listItem.dataset.tag && !target.closest(".remove-history")) {
-        // Clicar em um item do histórico
-        const tag = listItem.dataset.tag;
-        ui.searchInput.value = tag;
-        // Simula a troca de aba para busca
-        document.querySelector('.noxss-tabs__header-button[data-tab-id="search"]').click();
-        ui.searchForm.dispatchEvent(new Event("submit"));
-      } else if (card && target.closest(".fullscreen-btn")) {
-        // Handle fullscreen button separately to open media in new tab
+      } else if (!target.closest("a, button, .noxss-card__body p a")) {
         const filePath = card.dataset.filePath;
-        window.open(`/media/${filePath}`, '_blank');
-      } else if (card && !target.closest("button, i, a, video")) {
-        const filePath = card.dataset.filePath;
-        // Determine which state to search in (feed or search results)
-        let clickedFile = null;
-        if (document.getElementById('panel-feed').classList.contains('is-visible')) {
-            clickedFile = feedState.files.find(f => f.filePath === filePath);
-        } else if (document.getElementById('panel-search').classList.contains('is-visible')) {
-            clickedFile = searchState.files.find(f => f.filePath === filePath);
-        } else if (document.getElementById('panel-favorites').classList.contains('is-visible')) {
-            clickedFile = favoritesState.files.find(f => f.filePath === filePath);
-        }
+        const allFiles = [...feedState.files, ...searchState.files];
+        const clickedFile = allFiles.find(f => f && f.filePath === filePath);
 
-        if (!clickedFile) return;
+        if (!clickedFile || !clickedFile.metadata) return;
 
-        ui.modalDetailsContainer.innerHTML = ''; // Clear previous modal details
-
-        const modalMediaContainer = query("#postModal .media-container");
-        const isVideo = clickedFile.filePath.endsWith(".mp4") || clickedFile.filePath.endsWith(".webm");
+        ui.modalMediaContainer.innerHTML = renderMedia(clickedFile);
         
-        let mediaHtml = '';
-        if (isVideo) {
-            const videoThumbnail = clickedFile.metadata && clickedFile.metadata.thumb ? `/media/${clickedFile.metadata.thumb}` : '';
-            mediaHtml = `<video src="/media/${clickedFile.filePath}" controls autoplay loop ${videoThumbnail ? `poster="${videoThumbnail}"` : ''} style="width:100%; height:auto; display:block; border-radius: var(--noxss-border-radius-base);"></video>`;
-        } else {
-            mediaHtml = `<img src="/media/${clickedFile.filePath}" style="width:100%; height:auto; display:block; border-radius: var(--noxss-border-radius-base);">`;
-        }
-        modalMediaContainer.innerHTML = mediaHtml;
-
-        let tagsDisplay = '';
-        if (clickedFile.metadata && clickedFile.metadata.hashtags && clickedFile.metadata.hashtags.length > 0) {
-            tagsDisplay = clickedFile.metadata.hashtags.map(tag => `<span class="noxss-badge noxss-badge--primary">#${tag}</span>`).join(' ');
-        } else {
-            tagsDisplay = `<span class="text-secondary">${clickedFile.filePath.split("/").pop()}</span>`;
-        }
+        const meta = clickedFile.metadata;
+        let detailsHTML = `
+            <div class="modal-profile-banner" style="background-image: url('${meta.author.profile_banner}')"></div>
+            <div class="modal-profile-header">
+                <img src="${meta.author.profile_image}" class="modal-profile-avatar" alt="${meta.author.nick}">
+                <a href="https://twitter.com/${meta.author.name}" target="_blank" class="noxss-btn noxss-btn--secondary">Ver Perfil</a>
+            </div>
+            <div class="modal-profile-info">
+                <h4 class="modal-author-name">${meta.author.name} ${meta.author.verified ? '<i data-feather="check-circle" class="verified-badge"></i>' : ''}</h4>
+                <p class="modal-author-nick text-secondary">@${meta.author.nick}</p>
+                <p class="modal-author-desc">${formatTweetContent(meta.author.description)}</p>
+                <p class="text-secondary small">Entrou em: ${new Date(meta.author.date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</p>
+                <div class="modal-author-stats">
+                    <span><strong>${formatNumber(meta.author.friends_count)}</strong> Seguindo</span>
+                    <span><strong>${formatNumber(meta.author.followers_count)}</strong> Seguidores</span>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="modal-tweet-content">
+                <p>${formatTweetContent(meta.content, meta.hashtags, meta.mentions)}</p>
+                <p class="text-secondary small">${new Date(meta.date).toLocaleString('pt-BR')}</p>
+                <div class="tweet-card__stats modal-stats">
+                    <span><i data-feather="message-circle"></i> ${formatNumber(meta.reply_count)}</span>
+                    <span><i data-feather="repeat"></i> ${formatNumber(meta.retweet_count)}</span>
+                    <span><i data-feather="heart"></i> ${formatNumber(meta.favorite_count)}</span>
+                    <span><i data-feather="bar-chart-2"></i> ${formatNumber(meta.view_count)}</span>
+                </div>
+                <a href="https://twitter.com/i/web/status/${meta.tweet_id}" target="_blank" class="noxss-btn noxss-btn--primary u-mt-3">Ver no Twitter</a>
+            </div>
+        `;
+        ui.modalDetailsContainer.innerHTML = detailsHTML;
         
-        // Add more detailed metadata to the modal body
-        let modalDetails = ``;
-        if (clickedFile.metadata) {
-            const meta = clickedFile.metadata;
-            modalDetails += `<p class="mt-3"><strong>Autor:</strong> ${meta.author && meta.author.nick ? `<a href="https://twitter.com/${meta.author.name}" target="_blank">@${meta.author.nick}</a>` : 'N/A'}</p>`;
-            modalDetails += `<p><strong>Publicado em:</strong> ${meta.date ? new Date(meta.date).toLocaleDateString('pt-BR') : 'N/A'}</p>`;
-            if (meta.content) {
-                modalDetails += `<p><strong>Descrição:</strong> ${meta.content}</p>`;
-            }
-            if (meta.view_count) {
-                modalDetails += `<p><strong>Visualizações:</strong> ${meta.view_count.toLocaleString('pt-BR')}</p>`;
-            }
-            if (meta.favorite_count) {
-                modalDetails += `<p><strong>Curtidas:</strong> ${meta.favorite_count.toLocaleString('pt-BR')}</p>`;
-            }
-            if (meta.url) {
-                modalDetails += `<p><a href="${meta.url}" target="_blank" class="noxss-btn noxss-btn--link">Ver post original</a></p>`;
-            }
-        }
-
-        getEl("modal-tags").innerHTML = tagsDisplay;
-        ui.modalDetailsContainer.innerHTML = modalDetails; // Insert into the new container
         Noxss.Modals.open("postModal");
+        feather.replace();
+      }
+    });
+
+    // Simplified history and unwanted tags events
+    document.body.addEventListener('click', e => {
+      const historyItem = e.target.closest('.remove-history');
+      if(historyItem) {
+        appState.history = appState.history.filter(h => h !== historyItem.dataset.tag);
+        DataManager.saveState();
+        updateUILists();
+        return;
+      }
+      const unwantedItem = e.target.closest('.remove-unwanted-tag');
+      if(unwantedItem) {
+        appState.unwantedTags = appState.unwantedTags.filter(t => t !== unwantedItem.dataset.tag);
+        DataManager.saveState();
+        updateUILists();
       }
     });
 
     getEl("clear-history").addEventListener("click", () => {
-      if (confirm("Tem certeza que deseja limpar todo o histórico de busca?")) {
+      if (confirm("Tem certeza?")) {
         appState.history = [];
         DataManager.saveState();
         updateUILists();
       }
     });
     getEl("clear-favorites").addEventListener("click", () => {
-      if (confirm("Tem certeza que deseja limpar todos os favoritos?")) {
+      if (confirm("Tem certeza?")) {
         appState.favorites = [];
         DataManager.saveState();
         updateUILists();
       }
     });
-    getEl("sort-favorites").addEventListener("change", updateUILists);
-    getEl("download-json-btn").addEventListener("click", () => {
-      const blob = new Blob([DataManager.exportData()], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob); // Cria um URL temporário para o blob
-      const a = document.createElement("a"); // Cria um elemento <a>
-      a.href = url; // Define o href como o URL do blob
-      a.download = "media_vault_backup.json"; // Define o nome do arquivo para download
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-    getEl("copy-json-btn").addEventListener("click", (e) => {
-      navigator.clipboard.writeText(DataManager.exportData()).then(() => {
-        const btn = e.currentTarget;
-        const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i data-feather="check" class="noxss-icon"></i> Copiado!';
-        feather.replace();
-        setTimeout(() => {
-          btn.innerHTML = originalHtml;
-          feather.replace();
-        }, 2000);
-      });
-    });
-
-    const uploadInput = getEl("upload-json-input");
-    getEl("import-backup-btn").addEventListener("click", () => uploadInput.click());
-    uploadInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (res) => {
-        const jsonString = res.target.result;
-        Noxss.Modals.open("modal-restore-choice");
-
-        const handleMerge = () => {
-          if (DataManager.mergeData(jsonString)) {
-            Noxss.Toasts.show({
-              message: "Backup mesclado com sucesso!",
-              status: "success",
-            });
-            updateUILists();
-          } else {
-            Noxss.Toasts.show({
-              message: "Arquivo de backup inválido.",
-              status: "danger",
-            });
-          }
-          Noxss.Modals.close();
-          e.target.value = null;
-        };
-
-        const handleOverwrite = () => {
-          if (DataManager.overwriteData(jsonString)) {
-            Noxss.Toasts.show({
-              message: "Backup restaurado com sucesso!",
-              status: "success",
-            });
-            initTheme();
-            updateUILists();
-          } else {
-            Noxss.Toasts.show({
-              message: "Arquivo de backup inválido.",
-              status: "danger",
-            });
-          }
-          Noxss.Modals.close();
-          e.target.value = null;
-        };
-
-        getEl("merge-btn").addEventListener("click", handleMerge, {
-          once: true,
-        });
-        getEl("overwrite-btn").addEventListener("click", handleOverwrite, {
-          once: true,
-        });
-      };
-      reader.readAsText(file);
-    });
-
     getEl("add-unwanted-tag-btn").addEventListener("click", () => {
       const input = getEl("unwanted-tag-input");
-      const tag = input.value.trim().toLowerCase();
-      if (tag && !appState.unwantedTags.includes(tag)) {
-        appState.unwantedTags.push(tag);
+      if (input.value.trim() && !appState.unwantedTags.includes(input.value.trim().toLowerCase())) {
+        appState.unwantedTags.push(input.value.trim().toLowerCase());
         DataManager.saveState();
         updateUILists();
         input.value = "";
       }
     });
-    getEl("unwanted-tags-list").addEventListener("click", (e) => {
-      if (e.target.closest(".remove-unwanted-tag")) {
-        const tagToRemove = e.target.closest(".remove-unwanted-tag").dataset.tag;
-        appState.unwantedTags = appState.unwantedTags.filter((t) => t !== tagToRemove);
-        DataManager.saveState();
-        updateUILists();
-      }
+
+    // Backup/Restore listeners
+    const uploadInput = getEl("upload-json-input");
+    getEl("download-json-btn").addEventListener("click", () => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([DataManager.exportData()], { type: "application/json" }));
+        a.download = "media_vault_backup.json";
+        a.click();
+        URL.revokeObjectURL(a.href);
+    });
+    getEl("copy-json-btn").addEventListener("click", e => {
+        navigator.clipboard.writeText(DataManager.exportData()).then(() => {
+            const originalHtml = e.currentTarget.innerHTML;
+            e.currentTarget.innerHTML = '<i data-feather="check"></i> Copiado!';
+            feather.replace();
+            setTimeout(() => { e.currentTarget.innerHTML = originalHtml; feather.replace(); }, 2000);
+        });
+    });
+    getEl("import-backup-btn").addEventListener("click", () => uploadInput.click());
+    uploadInput.addEventListener("change", e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = res => {
+            const jsonString = res.target.result;
+            Noxss.Modals.open("modal-restore-choice");
+            const handleMerge = () => {
+                if (DataManager.mergeData(jsonString)) {
+                    Noxss.Toasts.show({ message: "Backup mesclado!", status: "success" });
+                    updateUILists();
+                } else {
+                    Noxss.Toasts.show({ message: "Arquivo de backup inválido.", status: "danger" });
+                }
+                Noxss.Modals.close("modal-restore-choice");
+            };
+            const handleOverwrite = () => {
+                if (DataManager.overwriteData(jsonString)) {
+                    Noxss.Toasts.show({ message: "Backup restaurado!", status: "success" });
+                    initTheme();
+                    updateUILists();
+                } else {
+                    Noxss.Toasts.show({ message: "Arquivo de backup inválido.", status: "danger" });
+                }
+                Noxss.Modals.close("modal-restore-choice");
+            };
+            getEl("merge-btn").addEventListener("click", handleMerge, { once: true });
+            getEl("overwrite-btn").addEventListener("click", handleOverwrite, { once: true });
+        };
+        reader.readAsText(file);
     });
   }
 
@@ -556,7 +579,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadPosts(ui.feedContainer, feedState.currentTags, false, false);
     updateUILists();
     bindEvents();
-    //updateAccentColor("#63c7d6");
   };
 
   init();
