@@ -102,6 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
     searchInput: getEl("search-input"),
     autocompleteContainer: getEl("autocomplete-container"),
     themeSelect: getEl("theme-select"),
+    modalDetailsContainer: getEl("modal-details"), // Added this line
     htmlElement: document.documentElement,
   };
   let currentPage = 0,
@@ -118,10 +119,18 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===================================================
   const getApiUrl = () => "/api/media";
 
-  const renderMedia = (fileUrl, tags) => {
+  const renderMedia = (file) => {
+    const fileUrl = file.filePath;
     const isVideo = fileUrl.endsWith(".mp4") || fileUrl.endsWith(".webm");
-    const mediaTag = isVideo ? `<video src="/media/${fileUrl}" controls preload="metadata" style="width:100%; height:auto; display:block; border-radius: var(--noxss-border-radius-base);"></video>` : `<img src="/media/${fileUrl}" alt="${tags}" loading="lazy" class="noxss-card__media">`;
-    return isVideo ? `<div class="p-0">${mediaTag}</div>` : mediaTag;
+    const altText = file.metadata && file.metadata.description ? file.metadata.description : file.metadata && file.metadata.content ? file.metadata.content : fileUrl;
+
+    if (isVideo) {
+        // Use a thumbnail from metadata if available
+        const videoThumbnail = file.metadata && file.metadata.thumb ? `/media/${file.metadata.thumb}` : '';
+        return `<div class="p-0"><video src="/media/${fileUrl}" controls preload="metadata" ${videoThumbnail ? `poster="${videoThumbnail}"` : ''} style="width:100%; height:auto; display:block; border-radius: var(--noxss-border-radius-base);"></video></div>`;
+    } else {
+        return `<img src="/media/${fileUrl}" alt="${altText}" loading="lazy" class="noxss-card__media">`;
+    }
   };
 
   const loadPosts = async (container, searchTags = "", isSearch = false, isLoadMore = false) => {
@@ -140,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const response = await fetch(getApiUrl());
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-        state.files = data.files || [];
+        state.files = data || []; // API now returns array of objects directly
         state.page = 0;
         container.innerHTML = "";
       }
@@ -151,10 +160,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const unwanted = appState.unwantedTags.map((t) => t.toLowerCase());
 
       let filteredFiles = state.files.filter((file) => {
-        const lowerFile = file.toLowerCase();
-        if (lowerFile.endsWith(".json")) return false; // Ignora arquivos .json
-        const hasUnwanted = unwanted.some((tag) => lowerFile.includes(tag));
-        const matchesSearch = searchTerms.every((term) => lowerFile.includes(term));
+        // file is now an object { filePath: '...', metadata: {...} }
+        const lowerFilePath = file.filePath.toLowerCase();
+        
+        const hasUnwanted = unwanted.some((tag) => lowerFilePath.includes(tag));
+        const matchesSearch = searchTerms.every((term) => {
+            // Search in filePath and metadata content/hashtags if available
+            return lowerFilePath.includes(term) || 
+                   (file.metadata && file.metadata.content && file.metadata.content.toLowerCase().includes(term)) ||
+                   (file.metadata && file.metadata.hashtags && file.metadata.hashtags.some(hashtag => hashtag.toLowerCase().includes(term)));
+        });
         return !hasUnwanted && matchesSearch;
       });
 
@@ -175,19 +190,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (filesToRender.length === 0 && state.page === 0) container.innerHTML = '<p class="text-secondary text-center">Nenhuma mídia encontrada.</p>';
 
-      filesToRender.forEach((file) => {
-        const isFavorite = appState.favorites.includes(file);
+      filesToRender.forEach((file) => { // file is now an object { filePath: '...', metadata: {...} }
+        const isFavorite = appState.favorites.includes(file.filePath);
         const favButtonClasses = isFavorite ? "noxss-btn--primary" : "noxss-btn--secondary";
+        
+        const fileNameOnly = file.filePath.split("/").pop();
+        const tagsDisplay = file.metadata && file.metadata.hashtags && file.metadata.hashtags.length > 0
+                            ? file.metadata.hashtags.map(tag => `#${tag}`).join(' ')
+                            : fileNameOnly;
 
         const cardHTML = `
-                                <div class="noxss-card noxss-card--interactive" data-file-path="${file}">
-                                    ${renderMedia(file, file)}
+                                <div class="noxss-card noxss-card--interactive" data-file-path="${file.filePath}">
+                                    ${renderMedia(file)}
                                     <div class="noxss-card__body">
-                                        <p class="tag-list">${file.split("/").pop()}</p>
+                                        <p class="tag-list">${tagsDisplay}</p>
+                                        ${file.metadata && file.metadata.author ? `<p class="text-secondary small">Por: @${file.metadata.author.nick}</p>` : ''}
                                         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                            <a href="/media/${file}" download class="noxss-btn noxss-btn--secondary download-btn" aria-label="Baixar"><i data-feather="download" class="noxss-icon"></i></a>
-                                            <button class="noxss-btn noxss-btn--secondary fullscreen-btn" aria-label="Tela Cheia"><i data-feather="maximize" class="noxss-icon"></i></button>
-                                            <button class="noxss-btn ${favButtonClasses} favorite-btn" data-path="${file}" aria-label="Favoritar"><i data-feather="heart" class="noxss-icon"></i></button>
+                                            <a href="/media/${file.filePath}" download class="noxss-btn noxss-btn--secondary download-btn" aria-label="Baixar"><i data-feather="download" class="noxss-icon"></i></a>
+                                            <button class="noxss-btn noxss-btn--secondary fullscreen-btn" aria-label="Tela Cheia" data-file-path="${file.filePath}"><i data-feather="maximize" class="noxss-icon"></i></button>
+                                            <button class="noxss-btn ${favButtonClasses} favorite-btn" data-path="${file.filePath}" aria-label="Favoritar"><i data-feather="heart" class="noxss-icon"></i></button>
                                         </div>
                                     </div>
                                 </div>`;
@@ -219,8 +240,10 @@ document.addEventListener("DOMContentLoaded", () => {
       ui.favoritesContainer.innerHTML = "";
     }
 
-    const sortedFavorites = [...appState.favorites].sort().reverse();
-    favoritesState.files = sortedFavorites;
+    const sortedFavoritesPaths = [...appState.favorites].sort().reverse();
+    // Retrieve full file objects for favorites from the already loaded feedState.files
+    // This assumes that all favorite items would have been loaded into feedState.files at some point.
+    favoritesState.files = sortedFavoritesPaths.map(favPath => feedState.files.find(f => f.filePath === favPath)).filter(Boolean);
 
     const start = favoritesState.page * POSTS_PER_PAGE;
     const end = start + POSTS_PER_PAGE;
@@ -231,7 +254,25 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const favoritesHTML = favoritesToRender.map((favPath) => `<div class="noxss-card" data-file-path="${favPath}">${renderMedia(favPath, favPath)}<div class="noxss-card__body"><p class="tag-list">${favPath.split("/").pop()}</p><div style="display: flex; flex-wrap: wrap; gap: 0.5rem;"><a href="/media/${favPath}" download class="noxss-btn noxss-btn--secondary download-btn"><i data-feather="download" class="noxss-icon"></i></a><button class="noxss-btn noxss-btn--secondary fullscreen-btn"><i data-feather="maximize" class="noxss-icon"></i></button><button class="noxss-btn noxss-btn--danger remove-favorite" data-path="${favPath}"><i data-feather="trash-2" class="noxss-icon"></i></button></div></div></div>`).join("");
+    const favoritesHTML = favoritesToRender.map((favItem) => {
+        const fileNameOnly = favItem.filePath.split("/").pop();
+        const tagsDisplay = favItem.metadata && favItem.metadata.hashtags && favItem.metadata.hashtags.length > 0
+                            ? favItem.metadata.hashtags.map(tag => `#${tag}`).join(' ')
+                            : fileNameOnly;
+
+        return `<div class="noxss-card" data-file-path="${favItem.filePath}">
+                    ${renderMedia(favItem)}
+                    <div class="noxss-card__body">
+                        <p class="tag-list">${tagsDisplay}</p>
+                        ${favItem.metadata && favItem.metadata.author ? `<p class="text-secondary small">Por: @${favItem.metadata.author.nick}</p>` : ''}
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            <a href="/media/${favItem.filePath}" download class="noxss-btn noxss-btn--secondary download-btn"><i data-feather="download" class="noxss-icon"></i></a>
+                            <button class="noxss-btn noxss-btn--secondary fullscreen-btn" data-file-path="${favItem.filePath}"><i data-feather="maximize" class="noxss-icon"></i></button>
+                            <button class="noxss-btn noxss-btn--danger remove-favorite" data-path="${favItem.filePath}"><i data-feather="trash-2" class="noxss-icon"></i></button>
+                        </div>
+                    </div>
+                </div>`;
+    }).join("");
     ui.favoritesContainer.insertAdjacentHTML("beforeend", favoritesHTML);
 
     favoritesState.page++;
@@ -331,13 +372,67 @@ document.addEventListener("DOMContentLoaded", () => {
         // Simula a troca de aba para busca
         document.querySelector('.noxss-tabs__header-button[data-tab-id="search"]').click();
         ui.searchForm.dispatchEvent(new Event("submit"));
+      } else if (card && target.closest(".fullscreen-btn")) {
+        // Handle fullscreen button separately to open media in new tab
+        const filePath = card.dataset.filePath;
+        window.open(`/media/${filePath}`, '_blank');
       } else if (card && !target.closest("button, i, a, video")) {
-        const mediaUrl = card.querySelector(".download-btn").dataset.url;
-        const tags = card.querySelector(".tag-list").textContent;
+        const filePath = card.dataset.filePath;
+        // Determine which state to search in (feed or search results)
+        let clickedFile = null;
+        if (document.getElementById('panel-feed').classList.contains('is-visible')) {
+            clickedFile = feedState.files.find(f => f.filePath === filePath);
+        } else if (document.getElementById('panel-search').classList.contains('is-visible')) {
+            clickedFile = searchState.files.find(f => f.filePath === filePath);
+        } else if (document.getElementById('panel-favorites').classList.contains('is-visible')) {
+            clickedFile = favoritesState.files.find(f => f.filePath === filePath);
+        }
+
+        if (!clickedFile) return;
+
+        ui.modalDetailsContainer.innerHTML = ''; // Clear previous modal details
+
         const modalMediaContainer = query("#postModal .media-container");
-        const isVideo = mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".webm");
-        modalMediaContainer.innerHTML = isVideo ? `<video src="${mediaUrl}" controls autoplay style="width:100%; height:auto; display:block;"></video>` : `<img src="${mediaUrl}" style="width:100%; height:auto; display:block;">`;
-        getEl("modal-tags").textContent = tags;
+        const isVideo = clickedFile.filePath.endsWith(".mp4") || clickedFile.filePath.endsWith(".webm");
+        
+        let mediaHtml = '';
+        if (isVideo) {
+            const videoThumbnail = clickedFile.metadata && clickedFile.metadata.thumb ? `/media/${clickedFile.metadata.thumb}` : '';
+            mediaHtml = `<video src="/media/${clickedFile.filePath}" controls autoplay loop ${videoThumbnail ? `poster="${videoThumbnail}"` : ''} style="width:100%; height:auto; display:block; border-radius: var(--noxss-border-radius-base);"></video>`;
+        } else {
+            mediaHtml = `<img src="/media/${clickedFile.filePath}" style="width:100%; height:auto; display:block; border-radius: var(--noxss-border-radius-base);">`;
+        }
+        modalMediaContainer.innerHTML = mediaHtml;
+
+        let tagsDisplay = '';
+        if (clickedFile.metadata && clickedFile.metadata.hashtags && clickedFile.metadata.hashtags.length > 0) {
+            tagsDisplay = clickedFile.metadata.hashtags.map(tag => `<span class="noxss-badge noxss-badge--primary">#${tag}</span>`).join(' ');
+        } else {
+            tagsDisplay = `<span class="text-secondary">${clickedFile.filePath.split("/").pop()}</span>`;
+        }
+        
+        // Add more detailed metadata to the modal body
+        let modalDetails = ``;
+        if (clickedFile.metadata) {
+            const meta = clickedFile.metadata;
+            modalDetails += `<p class="mt-3"><strong>Autor:</strong> ${meta.author && meta.author.nick ? `<a href="https://twitter.com/${meta.author.name}" target="_blank">@${meta.author.nick}</a>` : 'N/A'}</p>`;
+            modalDetails += `<p><strong>Publicado em:</strong> ${meta.date ? new Date(meta.date).toLocaleDateString('pt-BR') : 'N/A'}</p>`;
+            if (meta.content) {
+                modalDetails += `<p><strong>Descrição:</strong> ${meta.content}</p>`;
+            }
+            if (meta.view_count) {
+                modalDetails += `<p><strong>Visualizações:</strong> ${meta.view_count.toLocaleString('pt-BR')}</p>`;
+            }
+            if (meta.favorite_count) {
+                modalDetails += `<p><strong>Curtidas:</strong> ${meta.favorite_count.toLocaleString('pt-BR')}</p>`;
+            }
+            if (meta.url) {
+                modalDetails += `<p><a href="${meta.url}" target="_blank" class="noxss-btn noxss-btn--link">Ver post original</a></p>`;
+            }
+        }
+
+        getEl("modal-tags").innerHTML = tagsDisplay;
+        ui.modalDetailsContainer.innerHTML = modalDetails; // Insert into the new container
         Noxss.Modals.open("postModal");
       }
     });
